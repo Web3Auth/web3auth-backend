@@ -1,0 +1,12 @@
+{
+  "name": "@web3auth/node-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rimraf dist/ && tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
