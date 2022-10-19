@@ -3,8 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "rimraf dist/ && tsc"
+  },
+  "dependencies": {
+    "@web3auth/base": "^3.0.0",
+    "@web3auth/ethereum-provider": "^3.0.0",
+    "@web3auth/solana-provider": "^3.0.0",
+    "@web3auth/base-provider": "^3.0.0",
+    "@toruslabs/torus.js": "^6.2.0",
+    "@toruslabs/fetch-node-details": "^8.0.0",
+    "@toruslabs/openlogin-ed25519": "^2.0.0"
   },
   "keywords": [],
   "author": "",
