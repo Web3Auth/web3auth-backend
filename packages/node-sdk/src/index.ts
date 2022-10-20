@@ -4,8 +4,9 @@ import { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, SafeEventEmitt
 import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
+import { keccak256 } from "web3-utils";
 
-import { InitParams, IWeb3Auth, LoginParams } from "./interface";
+import { AggregateVerifierParams, InitParams, IWeb3Auth, LoginParams } from "./interface";
 
 type PrivateKeyProvider = IBaseProvider<string>;
 
@@ -91,7 +92,7 @@ export class Web3Auth implements IWeb3Auth {
 
   async connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null> {
     if (!this.torusUtils || !this.nodeDetailManager || !this.privKeyProvider) throw new Error("Please call init first");
-    const { verifier, verifierId, idToken } = loginParams;
+    const { verifier, verifierId, idToken, subVerifierInfoArray } = loginParams;
     const verifierDetails = { verifier, verifierId };
 
     const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
@@ -102,12 +103,30 @@ export class Web3Auth implements IWeb3Auth {
     if (pubDetails.typeOfUser === "v1" || pubDetails.upgraded) {
       throw new Error("User has already enabled mfa, please use the @web3auth/web3auth-web sdk for login with mfa");
     }
+
+    let finalIdToken = idToken;
+    let finalVerifierParams = { verifier_id: verifierId };
+    if (subVerifierInfoArray && subVerifierInfoArray?.length > 0) {
+      const aggregateVerifierParams: AggregateVerifierParams = { verify_params: [], sub_verifier_ids: [], verifier_id: "" };
+      const aggregateIdTokenSeeds = [];
+      for (let index = 0; index < subVerifierInfoArray.length; index += 1) {
+        const userInfo = subVerifierInfoArray[index];
+        aggregateVerifierParams.verify_params.push({ verifier_id: verifierId, idtoken: userInfo.idToken });
+        aggregateVerifierParams.sub_verifier_ids.push(userInfo.verifier);
+        aggregateIdTokenSeeds.push(userInfo.idToken);
+      }
+      aggregateIdTokenSeeds.sort();
+      finalIdToken = keccak256(aggregateIdTokenSeeds.join(String.fromCharCode(29))).slice(2);
+      aggregateVerifierParams.verifier_id = verifierId;
+      finalVerifierParams = aggregateVerifierParams;
+    }
+
     const retrieveSharesResponse = await this.torusUtils.retrieveShares(
       torusNodeEndpoints,
       torusIndexes,
       verifier,
-      { verifier_id: verifierId },
-      idToken
+      finalVerifierParams,
+      finalIdToken
     );
     await this.privKeyProvider.setupProvider(retrieveSharesResponse.privKey.padStart(64, "0"));
     return this.privKeyProvider.provider;
