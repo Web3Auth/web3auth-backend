@@ -16,7 +16,11 @@
     "@toruslabs/torus.js": "^6.2.0",
     "@toruslabs/fetch-node-details": "^8.0.0",
     "@toruslabs/openlogin-ed25519": "^2.0.0",
-    "web3-utils":"^1.8.0"
+    "web3-utils":"^1.8.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.2"
   },
   "keywords": [],
   "author": "",

@@ -4,9 +4,13 @@ import { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, SafeEventEmitt
 import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
+import fetch from "node-fetch";
 import { keccak256 } from "web3-utils";
 
 import { AggregateVerifierParams, InitParams, IWeb3Auth, LoginParams } from "./interface";
+
+// eslint-disable-next-line n/no-unsupported-features/es-builtins
+(globalThis as any).fetch = fetch;
 
 type PrivateKeyProvider = IBaseProvider<string>;
 
