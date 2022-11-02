@@ -17,6 +17,7 @@ describe("web3auth backend", function () {
         chainId: "0x3", // ropsten
         rpcTarget: "https://small-long-brook.ropsten.quiknode.pro/e2fd2eb01412e80623787d1c40094465aa67624a",
       },
+      clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
     });
     web3auth.init({ network: "testnet" });
   });
@@ -29,7 +30,7 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("32583be6a7c7ad21be76f3788d5061abcce32e80007f293b4e4dfe8be64576d9");
+    expect(privKey).to.equal("29b3cb89c805401ebb0661794a463495b3bed6cc96d939a0a52e9fe5aa1dad94");
   });
 
   it("should be return a provider with private key for aggregate login", async function () {
@@ -44,6 +45,6 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("23d4a64a055a079bf1aa654d4a2742377e3944626662edee935ece845b46be93");
+    expect(privKey).to.equal("208763be04830f2fd695e80a8ddd0cef5da242510c965819747d8edfdfaf576e");
   });
 });
