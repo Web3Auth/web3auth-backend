@@ -59,23 +59,31 @@ export class Web3Auth implements IWeb3Auth {
 
   init(params: InitParams): void {
     const { network = "mainnet" } = params;
-    this.torusUtils = new TorusUtils({
-      enableOneKey: true,
-      network,
-    }) as Torus;
 
     let finalNetwork: string = TORUS_NETWORK.MAINNET;
     let finalProxyAddress = NodeDetailManager.PROXY_ADDRESS_MAINNET;
+    let signerHost = "https://signer.tor.us/api/sign";
+    let allowHost = "https://signer.tor.us/api/allow";
     if (network === TORUS_NETWORK.TESTNET) {
       finalNetwork = "https://small-long-brook.ropsten.quiknode.pro/e2fd2eb01412e80623787d1c40094465aa67624a";
       finalProxyAddress = NodeDetailManager.PROXY_ADDRESS_TESTNET;
     } else if (network === TORUS_NETWORK.CYAN) {
       finalNetwork = TORUS_NETWORK.CYAN;
       finalProxyAddress = NodeDetailManager.PROXY_ADDRESS_CYAN;
+      signerHost = "https://signer-polygon.tor.us/api/sign";
+      allowHost = "https://signer-polygon.tor.us/api/allow";
     } else if (network === TORUS_NETWORK.AQUA) {
       finalNetwork = TORUS_NETWORK.AQUA;
       finalProxyAddress = NodeDetailManager.PROXY_ADDRESS_AQUA;
+      signerHost = "https://signer-polygon.tor.us/api/sign";
+      allowHost = "https://signer-polygon.tor.us/api/allow";
     }
+    this.torusUtils = new TorusUtils({
+      enableOneKey: true,
+      network,
+      signerHost,
+      allowHost,
+    }) as Torus;
     this.nodeDetailManager = new NodeDetailManager({ network: finalNetwork, proxyAddress: finalProxyAddress });
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
       if (this.chainConfig === null) {
