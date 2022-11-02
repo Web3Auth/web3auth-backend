@@ -1,5 +1,6 @@
 /* eslint-disable security/detect-object-injection */
 import NodeDetailManager, { TORUS_NETWORK, TORUS_NETWORK_TYPE } from "@toruslabs/fetch-node-details";
+import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
 import { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, SafeEventEmitterProvider } from "@web3auth/base";
 import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider";
@@ -9,7 +10,7 @@ import fetch from "node-fetch";
 import { keccak256 } from "web3-utils";
 
 import { CONTRACT_MAP, SIGNER_MAP } from "./constants";
-import { AggregateVerifierParams, InitParams, IWeb3Auth, LoginParams } from "./interface";
+import { AggregateVerifierParams, InitParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
 
 // eslint-disable-next-line n/no-unsupported-features/es-builtins
 (globalThis as any).fetch = fetch;
@@ -21,6 +22,8 @@ const TorusUtils = require("@toruslabs/torus.js/dist/torusUtils-node").default;
 class Web3Auth implements IWeb3Auth {
   public provider: SafeEventEmitterProvider | null = null;
 
+  readonly options: Web3AuthOptions;
+
   private torusUtils: Torus | null = null;
 
   private nodeDetailManager: NodeDetailManager | null = null;
@@ -31,13 +34,14 @@ class Web3Auth implements IWeb3Auth {
 
   private currentChainNamespace: ChainNamespaceType;
 
-  constructor(params: { chainConfig: { chainId?: string; rpcTarget?: string } & Pick<CustomChainConfig, "chainNamespace"> }) {
-    if (!params?.chainConfig?.chainNamespace) {
+  constructor(options: Web3AuthOptions) {
+    if (!options?.chainConfig?.chainNamespace) {
       throw new Error("chainNamespace is required");
     }
+    if (!options.clientId) throw new Error("Please provide a valid clientId in constructor");
 
-    if (params.chainConfig?.chainNamespace !== CHAIN_NAMESPACES.OTHER) {
-      const { chainId, rpcTarget } = params?.chainConfig || {};
+    if (options.chainConfig?.chainNamespace !== CHAIN_NAMESPACES.OTHER) {
+      const { chainId, rpcTarget } = options?.chainConfig || {};
       if (!chainId) {
         throw new Error("chainId is required for non-OTHER chainNamespace");
       }
@@ -46,21 +50,22 @@ class Web3Auth implements IWeb3Auth {
       }
 
       this.chainConfig = {
-        ...(params?.chainConfig || {}),
-        chainId: params.chainConfig.chainId as string,
-        rpcTarget: params.chainConfig.rpcTarget as string,
         displayName: "",
         blockExplorer: "",
         ticker: "",
         tickerName: "",
+        chainId: options.chainConfig.chainId as string,
+        rpcTarget: options.chainConfig.rpcTarget as string,
+        ...(options?.chainConfig || {}),
       };
     }
 
-    this.currentChainNamespace = params.chainConfig.chainNamespace;
+    this.currentChainNamespace = options.chainConfig.chainNamespace;
+    this.options = options;
   }
 
-  init(params: InitParams): void {
-    const { network = "mainnet" } = params;
+  init(options: InitParams): void {
+    const { network = "mainnet" } = options;
 
     let finalNetwork: TORUS_NETWORK_TYPE | string = network;
     if (network === TORUS_NETWORK.TESTNET) {
@@ -71,6 +76,7 @@ class Web3Auth implements IWeb3Auth {
       network,
       allowHost: `${SIGNER_MAP[network]}/api/allow`,
       signerHost: `${SIGNER_MAP[network]}/api/sign`,
+      enableLogging: this.options.enableLogging,
     }) as Torus;
     this.nodeDetailManager = new NodeDetailManager({ network: finalNetwork, proxyAddress: CONTRACT_MAP[network] });
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
@@ -128,7 +134,8 @@ class Web3Auth implements IWeb3Auth {
       finalVerifierParams,
       finalIdToken
     );
-    await this.privKeyProvider.setupProvider(retrieveSharesResponse.privKey.padStart(64, "0"));
+    const finalKey = subkey(retrieveSharesResponse.privKey.padStart(64, "0"), Buffer.from(this.options.clientId, "base64"));
+    await this.privKeyProvider.setupProvider(finalKey.padStart(64, "0"));
     return this.privKeyProvider.provider;
   }
 }
