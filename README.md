@@ -32,7 +32,7 @@ For using Web3Auth in the web, you have two choices of SDKs to get started with.
 
 [Web3Auth Plug and Play Core SDK `@web3auth/core`](https://web3auth.io/docs/sdk/web/core/): The core module implemeting all the Web3Auth features you need and giving you the flexibilty of using your own UI with the Web3Auth SDK working in the backend.
 
-[Web3Auth Backend SDK `@web3auth/web3auth-backend`](https://web3auth.io/docs/sdk/web-backend/): A simple and east to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs. One thing to note here is that, with this you get semi-custodiality.
+[Web3Auth Backend SDK `@web3auth/web3auth-backend`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs. One thing to note here is that, with this you get semi-custodiality.
 
 ## ⚡ Quick Start
 
@@ -69,7 +69,7 @@ await web3auth.init();
 
 ### Login your User
 
-Once you're done initialising, just create a button that triggers to open the login modal for the user on their request. Logging in is as easy as:
+Once you're done initialising, logging in is as easy as:
 
 ```js
 await web3auth.connect({
