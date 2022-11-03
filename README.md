@@ -2,8 +2,7 @@
 
 [![lerna](https://img.shields.io/badge/maintained%20with-lerna-cc00ff.svg)](https://lerna.js.org/)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
-![npm](https://img.shields.io/npm/dw/@web3auth/web3auth-backend)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/web3auth/web3auth-backend/Build%20&%20Release)
+![npm](https://img.shields.io/npm/dw/@web3auth/node-sdk)
 
 Web3Auth is where passwordless auth meets non-custodial key infrastructure for Web3 apps and wallets. By aggregating OAuth (Google, Twitter, Discord) logins, different wallets and innovative Multi Party Computation (MPC) - Web3Auth provides a seamless login experience to every user on your application.
 
@@ -32,14 +31,14 @@ For using Web3Auth in the web, you have two choices of SDKs to get started with.
 
 [Web3Auth Plug and Play Core SDK `@web3auth/core`](https://web3auth.io/docs/sdk/web/core/): The core module implemeting all the Web3Auth features you need and giving you the flexibilty of using your own UI with the Web3Auth SDK working in the backend.
 
-[Web3Auth Backend SDK `@web3auth/web3auth-backend`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs. One thing to note here is that, with this you get semi-custodiality.
+[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
 
 ## ⚡ Quick Start
 
 ### Installation (Web3Auth Backend)
 
 ```shell
-npm install --save @web3auth/web3auth-backend
+npm install --save @web3auth/node-sdk
 ```
 
 ### Get your Client ID from Web3Auth Dashboard
@@ -53,7 +52,7 @@ Hop on to the [Web3Auth Dashboard](https://dashboard.web3auth.io/) and create a 
 Web3Auth needs to initialise as soon as your app loads up to enable the user to log in. Preferably done within a constructor, initialisation is the step where you can pass on all the configurations for Web3Auth you want. A simple integration for Ethereum blockchain will look like this:
 
 ```js
-import { Web3Auth } from "@web3auth/web3auth-backend";
+import { Web3Auth } from "@web3auth/node-sdk";
 
 //Initialize within your constructor
 const web3auth = new Web3Auth({
@@ -64,7 +63,7 @@ const web3auth = new Web3Auth({
   },
 });
 
-await web3auth.init();
+await web3auth.init({ network: "mainnet" });
 ```
 
 ### Login your User
@@ -73,15 +72,14 @@ Once you're done initialising, logging in is as easy as:
 
 ```js
 await web3auth.connect({
-  verifier: "verifier-name", 
-  verifierId: "verifier-Id", 
-  idToken: "JWT Token"
+  verifier: "verifier-name",
+  verifierId: "verifier-Id",
+  idToken: "JWT Token",
 });
 ```
 
 ## ⏪ Requirements
 
-- All packages require a peer dependency of `@babel/runtime`
 - Node 14+
 
 ## 🩹 Examples
