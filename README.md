@@ -60,10 +60,11 @@ const web3auth = new Web3Auth({
   chainConfig: {
     chainNamespace: "eip155",
     chainId: "0x1",
+    rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
   },
 });
 
-await web3auth.init({ network: "mainnet" });
+web3auth.init({ network: "mainnet" });
 ```
 
 ### Login your User
@@ -90,7 +91,9 @@ Checkout the examples for your preferred blockchain and platform in our [example
 
 Checkout the [Web3Auth Demo](https://demo-app.web3auth.io/) to see how Web3Auth can be used in your application.
 
-Further checkout the [demo folder](https://github.com/Web3Auth/Web3Auth/tree/master/demo) within `web3auth-web` repository, which contains other hosted demos for different usecases.
+Further checkout the [demo folder](https://github.com/Web3Auth/Web3Auth-backend/tree/master/demo) within `web3auth-backend` repository, which contains a Node.js example.
+
+Also, checkout the [demo folder](https://github.com/Web3Auth/Web3Auth/tree/master/demo) within `web3auth-web` repository, which contains other hosted demos for different usecases.
 
 ## 💬 Troubleshooting and Discussions
 
