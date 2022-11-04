@@ -6,7 +6,10 @@
   "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "rimraf dist/ && tsc",
-    "test": "cross-env NODE_ENV=test mocha"
+    "prepack": "npm run build",
+    "test": "cross-env NODE_ENV=test mocha",
+    "pre-commit": "lint-staged --cwd .",
+    "lint": "eslint --fix 'src/**/*.ts'"
   },
   "dependencies": {
     "@toruslabs/fetch-node-details": "^8.0.0",
@@ -28,5 +31,11 @@
   "license": "ISC",
   "publishConfig": {
     "access": "public"
+  },
+  "lint-staged": {
+    "!(*d).ts": [
+      "eslint --cache --fix",
+      "prettier --write"
+    ]
   }
 }

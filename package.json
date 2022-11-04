@@ -60,5 +60,8 @@
   "bugs": {
     "url": "https://github.com/Web3Auth/web3auth-backend/issues"
   },
-  "homepage": "https://github.com/Web3Auth/web3auth-backend#readme"
+  "homepage": "https://github.com/Web3Auth/web3auth-backend#readme",
+  "lint-staged": {
+    "*": "lerna run --concurrency 1 --stream --since HEAD --exclude-dependents pre-commit -- "
+  }
 }
