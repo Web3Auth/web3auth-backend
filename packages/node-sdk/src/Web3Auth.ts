@@ -1,5 +1,5 @@
 /* eslint-disable security/detect-object-injection */
-import NodeDetailManager, { TORUS_NETWORK, TORUS_NETWORK_TYPE } from "@toruslabs/fetch-node-details";
+import NodeDetailManager from "@toruslabs/fetch-node-details";
 import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
 import { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, SafeEventEmitterProvider } from "@web3auth/base";
@@ -67,10 +67,6 @@ class Web3Auth implements IWeb3Auth {
   init(options: InitParams): void {
     const { network = "mainnet" } = options;
 
-    let finalNetwork: TORUS_NETWORK_TYPE | string = network;
-    if (network === TORUS_NETWORK.TESTNET) {
-      finalNetwork = "https://small-long-brook.ropsten.quiknode.pro/e2fd2eb01412e80623787d1c40094465aa67624a";
-    }
     this.torusUtils = new TorusUtils({
       enableOneKey: true,
       network,
@@ -78,7 +74,8 @@ class Web3Auth implements IWeb3Auth {
       signerHost: `${SIGNER_MAP[network]}/api/sign`,
       enableLogging: this.options.enableLogging,
     }) as Torus;
-    this.nodeDetailManager = new NodeDetailManager({ network: finalNetwork, proxyAddress: CONTRACT_MAP[network] });
+
+    this.nodeDetailManager = new NodeDetailManager({ network, proxyAddress: CONTRACT_MAP[network] });
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
       if (this.chainConfig === null) {
         throw new Error("chainConfig is required for Solana in constructor");
