@@ -2,7 +2,14 @@
 import NodeDetailManager from "@toruslabs/fetch-node-details";
 import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
-import { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, SafeEventEmitterProvider } from "@web3auth/base";
+import {
+  CHAIN_NAMESPACES,
+  ChainNamespaceType,
+  CustomChainConfig,
+  SafeEventEmitterProvider,
+  WalletInitializationError,
+  WalletLoginError,
+} from "@web3auth/base";
 import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
@@ -36,17 +43,17 @@ class Web3Auth implements IWeb3Auth {
 
   constructor(options: Web3AuthOptions) {
     if (!options?.chainConfig?.chainNamespace) {
-      throw new Error("chainNamespace is required");
+      throw WalletInitializationError.invalidParams("Please provide a valid chainNamespace in chainConfig");
     }
-    if (!options.clientId) throw new Error("Please provide a valid clientId in constructor");
+    if (!options.clientId) throw WalletInitializationError.invalidParams("Please provide a valid clientId in constructor");
 
     if (options.chainConfig?.chainNamespace !== CHAIN_NAMESPACES.OTHER) {
       const { chainId, rpcTarget } = options?.chainConfig || {};
       if (!chainId) {
-        throw new Error("chainId is required for non-OTHER chainNamespace");
+        throw WalletInitializationError.invalidProviderConfigError("Please provide chainId inside chainConfig");
       }
       if (!rpcTarget) {
-        throw new Error("rpcTarget is required for non-OTHER chainNamespace");
+        throw WalletInitializationError.invalidProviderConfigError("Please provide rpcTarget inside chainConfig");
       }
 
       this.chainConfig = {
@@ -56,6 +63,7 @@ class Web3Auth implements IWeb3Auth {
         tickerName: "",
         chainId: options.chainConfig.chainId as string,
         rpcTarget: options.chainConfig.rpcTarget as string,
+        chainNamespace: options.chainConfig.chainNamespace as ChainNamespaceType,
         ...(options?.chainConfig || {}),
       };
     }
@@ -77,19 +85,15 @@ class Web3Auth implements IWeb3Auth {
 
     this.nodeDetailManager = new NodeDetailManager({ network, proxyAddress: CONTRACT_MAP[network] });
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
-      if (this.chainConfig === null) {
-        throw new Error("chainConfig is required for Solana in constructor");
-      }
       this.privKeyProvider = new SolanaPrivateKeyProvider({ config: { chainConfig: this.chainConfig } });
     } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
-      if (this.chainConfig === null) {
-        throw new Error("chainConfig is required for EVM chain in constructor");
-      }
       this.privKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig: this.chainConfig } });
     } else if (this.currentChainNamespace === CHAIN_NAMESPACES.OTHER) {
       this.privKeyProvider = new CommonPrivateKeyProvider();
     } else {
-      throw new Error(`Invalid chainNamespace: ${this.currentChainNamespace} found while connecting to wallet`);
+      throw WalletInitializationError.incompatibleChainNameSpace(
+        `Invalid chainNamespace: ${this.currentChainNamespace} found while connecting to wallet`
+      );
     }
   }
 
@@ -104,7 +108,7 @@ class Web3Auth implements IWeb3Auth {
     const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails, true);
 
     if (pubDetails.typeOfUser === "v1" || pubDetails.upgraded) {
-      throw new Error("User has already enabled mfa, please use the @web3auth/web3auth-web sdk for login with mfa");
+      throw WalletLoginError.fromCode(5000, "User has already enabled mfa, please use the @web3auth/web3auth-web sdk for login with mfa");
     }
 
     let finalIdToken = idToken;
