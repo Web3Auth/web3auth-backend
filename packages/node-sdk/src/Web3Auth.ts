@@ -17,7 +17,7 @@ import fetch from "node-fetch";
 import { keccak256 } from "web3-utils";
 
 import { CONTRACT_MAP, SIGNER_MAP } from "./constants";
-import { AggregateVerifierParams, InitParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
+import { AggregateVerifierParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
 
 // eslint-disable-next-line n/no-unsupported-features/es-builtins
 (globalThis as any).fetch = fetch;
@@ -69,12 +69,14 @@ class Web3Auth implements IWeb3Auth {
     }
 
     this.currentChainNamespace = options.chainConfig.chainNamespace;
-    this.options = options;
+    this.options = {
+      ...options,
+      web3AuthNetwork: options.web3AuthNetwork || "mainnet",
+    };
   }
 
-  init(options: InitParams): void {
-    const { network = "mainnet" } = options;
-
+  init(): void {
+    const { web3AuthNetwork: network } = this.options;
     this.torusUtils = new TorusUtils({
       enableOneKey: true,
       network,
