@@ -1,6 +1,5 @@
 /* eslint-disable security/detect-object-injection */
 import NodeDetailManager from "@toruslabs/fetch-node-details";
-import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
 import {
   CHAIN_NAMESPACES,
@@ -137,8 +136,7 @@ class Web3Auth implements IWeb3Auth {
       finalVerifierParams,
       finalIdToken
     );
-    const finalKey = subkey(retrieveSharesResponse.privKey.padStart(64, "0"), Buffer.from(this.options.clientId, "base64"));
-    await this.privKeyProvider.setupProvider(finalKey.padStart(64, "0"));
+    await this.privKeyProvider.setupProvider(retrieveSharesResponse.privKey.padStart(64, "0"));
     return this.privKeyProvider.provider;
   }
 }
