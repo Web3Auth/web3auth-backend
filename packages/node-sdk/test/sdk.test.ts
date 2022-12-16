@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { Web3Auth } from "../src";
 import { generateIdToken } from "./helpers";
 
-const TORUS_TEST_EMAIL = "test123@tor.us";
+const TORUS_TEST_EMAIL = "hello@tor.us";
 const TORUS_TEST_VERIFIER = "torus-test-health";
 const TORUS_TEST_AGGREGATE_VERIFIER = "torus-test-health-aggregate";
 
@@ -18,8 +18,9 @@ describe("web3auth backend", function () {
         rpcTarget: "https://small-long-brook.ropsten.quiknode.pro/e2fd2eb01412e80623787d1c40094465aa67624a",
       },
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
+      web3AuthNetwork: "testnet",
     });
-    web3auth.init({ network: "testnet" });
+    web3auth.init();
   });
   it("should return a provider with private key", async function () {
     const provider = await web3auth.connect({
@@ -30,7 +31,7 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("29b3cb89c805401ebb0661794a463495b3bed6cc96d939a0a52e9fe5aa1dad94");
+    expect(privKey).to.equal("296045a5599afefda7afbdd1bf236358baff580a0fe2db62ae5c1bbe817fbae4");
   });
 
   it("should be return a provider with private key for aggregate login", async function () {
@@ -45,6 +46,6 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("208763be04830f2fd695e80a8ddd0cef5da242510c965819747d8edfdfaf576e");
+    expect(privKey).to.equal("ad47959db4cb2e63e641bac285df1b944f54d1a1cecdaeea40042b60d53c35d2");
   });
 });
