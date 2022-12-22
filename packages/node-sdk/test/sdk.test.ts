@@ -48,4 +48,28 @@ describe("web3auth backend", function () {
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
     expect(privKey).to.equal("ad47959db4cb2e63e641bac285df1b944f54d1a1cecdaeea40042b60d53c35d2");
   });
+
+  it("should be able to login with solana", async function () {
+    const web3authSolana = new Web3Auth({
+      chainConfig: {
+        chainNamespace: "solana",
+        chainId: "0x3",
+        rpcTarget: "https://api.devnet.solana.com",
+      },
+      clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
+      web3AuthNetwork: "testnet",
+    });
+    web3authSolana.init();
+    const provider = await web3authSolana.connect({
+      verifier: TORUS_TEST_VERIFIER,
+      verifierId: TORUS_TEST_EMAIL,
+      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+    });
+    expect(provider).to.not.equal(null);
+
+    const privKey = await provider?.request({ method: "solanaPrivateKey", params: [] });
+    expect(privKey).to.equal(
+      "296045a5599afefda7afbdd1bf236358baff580a0fe2db62ae5c1bbe817fbae49fe0788629bf18798cefdb361b63f2b69f384bdf93fb85f89a24ef427d6f8d10"
+    );
+  });
 });
