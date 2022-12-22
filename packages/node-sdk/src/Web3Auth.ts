@@ -1,5 +1,6 @@
 /* eslint-disable security/detect-object-injection */
 import NodeDetailManager from "@toruslabs/fetch-node-details";
+import { getED25519Key } from "@toruslabs/openlogin-ed25519";
 import type Torus from "@toruslabs/torus.js";
 import {
   CHAIN_NAMESPACES,
@@ -136,7 +137,14 @@ class Web3Auth implements IWeb3Auth {
       finalVerifierParams,
       finalIdToken
     );
-    await this.privKeyProvider.setupProvider(retrieveSharesResponse.privKey.padStart(64, "0"));
+
+    const { privKey } = retrieveSharesResponse;
+    if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
+    let finalPrivKey = privKey.padStart(64, "0");
+    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+      finalPrivKey = getED25519Key(finalPrivKey).sk.toString("hex");
+    }
+    await this.privKeyProvider.setupProvider(finalPrivKey);
     return this.privKeyProvider.provider;
   }
 }
