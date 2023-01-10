@@ -112,3 +112,5 @@ scripts/
 .prettierrc.yaml
 .babelrc
 test/
+.env
+.env.*
