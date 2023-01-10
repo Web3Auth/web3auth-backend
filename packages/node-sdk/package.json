@@ -1,6 +1,6 @@
 {
   "name": "@web3auth/node-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
@@ -13,14 +13,14 @@
   },
   "dependencies": {
     "@toruslabs/fetch-node-details": "^8.1.0",
+    "@toruslabs/openlogin-ed25519": "^2.0.0",
     "@toruslabs/torus.js": "^6.3.1",
     "@web3auth/base": "^4.2.2",
     "@web3auth/base-provider": "^4.2.2",
     "@web3auth/ethereum-provider": "^4.2.2",
     "@web3auth/solana-provider": "^4.2.2",
     "node-fetch": "^2.6.7",
-    "web3-utils": "^1.8.1",
-    "@toruslabs/openlogin-ed25519": "^2.0.0"
+    "web3-utils": "^1.8.1"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.2"
