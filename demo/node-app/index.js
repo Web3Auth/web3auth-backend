@@ -7,9 +7,10 @@ const web3auth = new Web3Auth({
     chainId: "0x1",
     rpcTarget: "https://rpc.ankr.com/eth",
   },
+  web3AuthNetwork: "testnet"
 });
 
-web3auth.init({ network: "testnet" });
+web3auth.init();
 
 const connect = async () => {
   const provider = await web3auth.connect({

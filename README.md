@@ -62,9 +62,10 @@ const web3auth = new Web3Auth({
     chainId: "0x1",
     rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
   },
+  web3AuthNetwork: "mainnet",
 });
 
-web3auth.init({ network: "mainnet" });
+web3auth.init();
 ```
 
 ### Login your User
@@ -73,7 +74,7 @@ Once you're done initialising, logging in is as easy as:
 
 ```js
 await web3auth.connect({
-  verifier: "verifier-name",
+  verifier: "verifier-name", // replace this with your own verifier name
   verifierId: "verifier-Id",
   idToken: "JWT Token",
 });
