@@ -14,8 +14,8 @@ describe("web3auth backend", function () {
     web3auth = new Web3Auth({
       chainConfig: {
         chainNamespace: "eip155",
-        chainId: "0x3", // ropsten
-        rpcTarget: "https://small-long-brook.ropsten.quiknode.pro/e2fd2eb01412e80623787d1c40094465aa67624a",
+        chainId: "0x5", // goerli
+        rpcTarget: "https://rpc.ankr.com/eth_goerli",
       },
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
       web3AuthNetwork: "testnet",
