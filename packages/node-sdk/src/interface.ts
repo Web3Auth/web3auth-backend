@@ -52,4 +52,9 @@ export interface Web3AuthOptions {
    * @defaultValue false
    */
   enableLogging?: boolean;
+
+  /**
+   * app scoped priv keys.
+   */
+  usePnPKey?: boolean;
 }
