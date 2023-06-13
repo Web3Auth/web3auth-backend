@@ -1,5 +1,6 @@
 /* eslint-disable security/detect-object-injection */
 import NodeDetailManager from "@toruslabs/fetch-node-details";
+import { keccak256 } from "@toruslabs/metadata-helpers";
 import { getED25519Key } from "@toruslabs/openlogin-ed25519";
 import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
@@ -15,12 +16,10 @@ import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import fetch from "node-fetch";
-import { keccak256 } from "web3-utils";
 
 import { CONTRACT_MAP, SIGNER_MAP } from "./constants";
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
 
-// eslint-disable-next-line n/no-unsupported-features/es-builtins
 (globalThis as any).fetch = fetch;
 
 type PrivateKeyProvider = IBaseProvider<string>;
@@ -126,7 +125,11 @@ class Web3Auth implements IWeb3Auth {
         aggregateIdTokenSeeds.push(userInfo.idToken);
       }
       aggregateIdTokenSeeds.sort();
-      finalIdToken = keccak256(aggregateIdTokenSeeds.join(String.fromCharCode(29))).slice(2);
+
+      const inputString = aggregateIdTokenSeeds.join(String.fromCharCode(29));
+      const inputBuffer = Buffer.from(inputString, "utf8");
+      finalIdToken = Buffer.from(keccak256(inputBuffer)).toString("hex");
+
       aggregateVerifierParams.verifier_id = verifierId;
       finalVerifierParams = aggregateVerifierParams;
     }

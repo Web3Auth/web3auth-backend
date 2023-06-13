@@ -13,18 +13,18 @@
   },
   "dependencies": {
     "@toruslabs/fetch-node-details": "^8.1.1",
-    "@toruslabs/openlogin-ed25519": "^3.2.0",
-    "@toruslabs/openlogin-subkey": "^3.0.0",
+    "@toruslabs/metadata-helpers": "^4.0.0",
+    "@toruslabs/openlogin-ed25519": "^4.2.0",
+    "@toruslabs/openlogin-subkey": "^4.2.0",
     "@toruslabs/torus.js": "^6.4.0",
-    "@web3auth/base": "^5.0.1",
-    "@web3auth/base-provider": "^5.0.1",
-    "@web3auth/ethereum-provider": "^5.0.1",
-    "@web3auth/solana-provider": "^5.0.1",
-    "node-fetch": "^2.6.7",
-    "web3-utils": "^1.8.2"
+    "@web3auth/base": "^6.0.0",
+    "@web3auth/base-provider": "^6.0.0",
+    "@web3auth/ethereum-provider": "^6.0.0",
+    "@web3auth/solana-provider": "^6.0.0",
+    "node-fetch": "^2.6.7"
   },
   "devDependencies": {
-    "@types/node-fetch": "^2.6.2"
+    "@types/node-fetch": "^2.6.4"
   },
   "keywords": [],
   "author": "",
@@ -37,5 +37,9 @@
       "eslint --cache --fix",
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=16.18.1",
+    "npm": ">=8.x"
   }
 }
