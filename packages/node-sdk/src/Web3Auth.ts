@@ -1,5 +1,5 @@
 /* eslint-disable security/detect-object-injection */
-import NodeDetailManager from "@toruslabs/fetch-node-details";
+import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256 } from "@toruslabs/metadata-helpers";
 import { getED25519Key } from "@toruslabs/openlogin-ed25519";
 import { subkey } from "@toruslabs/openlogin-subkey";
@@ -12,17 +12,14 @@ import {
   WalletInitializationError,
   WalletLoginError,
 } from "@web3auth/base";
-import { CommonPrivateKeyProvider, IBaseProvider } from "@web3auth/base-provider";
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
+import { BaseProvider } from "@web3auth/base-provider";
 import fetch from "node-fetch";
 
-import { CONTRACT_MAP, SIGNER_MAP } from "./constants";
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
 
 (globalThis as any).fetch = fetch;
 
-type PrivateKeyProvider = IBaseProvider<string>;
+type PrivateKeyProvider = BaseProvider<string>;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const TorusUtils = require("@toruslabs/torus.js/dist/torusUtils-node").default;
@@ -37,66 +34,24 @@ class Web3Auth implements IWeb3Auth {
 
   private privKeyProvider: PrivateKeyProvider | null = null;
 
-  private chainConfig: CustomChainConfig | null = null;
-
-  private currentChainNamespace: ChainNamespaceType;
-
   constructor(options: Web3AuthOptions) {
-    if (!options?.chainConfig?.chainNamespace) {
-      throw WalletInitializationError.invalidParams("Please provide a valid chainNamespace in chainConfig");
-    }
-    if (!options.clientId) throw WalletInitializationError.invalidParams("Please provide a valid clientId in constructor");
-
-    if (options.chainConfig?.chainNamespace !== CHAIN_NAMESPACES.OTHER) {
-      const { chainId, rpcTarget } = options?.chainConfig || {};
-      if (!chainId) {
-        throw WalletInitializationError.invalidProviderConfigError("Please provide chainId inside chainConfig");
-      }
-      if (!rpcTarget) {
-        throw WalletInitializationError.invalidProviderConfigError("Please provide rpcTarget inside chainConfig");
-      }
-
-      this.chainConfig = {
-        displayName: "",
-        blockExplorer: "",
-        ticker: "",
-        tickerName: "",
-        chainId: options.chainConfig.chainId as string,
-        rpcTarget: options.chainConfig.rpcTarget as string,
-        chainNamespace: options.chainConfig.chainNamespace as ChainNamespaceType,
-        ...(options?.chainConfig || {}),
-      };
-    }
-
-    this.currentChainNamespace = options.chainConfig.chainNamespace;
     this.options = {
       ...options,
       web3AuthNetwork: options.web3AuthNetwork || "mainnet",
     };
   }
 
-  init(): void {
+  init({ provider }: { provider: PrivateKeyProvider }): void {
     const { web3AuthNetwork: network } = this.options;
     this.torusUtils = new TorusUtils({
       enableOneKey: true,
       network,
-      allowHost: `${SIGNER_MAP[network]}/api/allow`,
-      signerHost: `${SIGNER_MAP[network]}/api/sign`,
       enableLogging: this.options.enableLogging,
+      clientId: this.options.clientId,
     }) as Torus;
 
-    this.nodeDetailManager = new NodeDetailManager({ network, proxyAddress: CONTRACT_MAP[network] });
-    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
-      this.privKeyProvider = new SolanaPrivateKeyProvider({ config: { chainConfig: this.chainConfig } });
-    } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
-      this.privKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig: this.chainConfig } });
-    } else if (this.currentChainNamespace === CHAIN_NAMESPACES.OTHER) {
-      this.privKeyProvider = new CommonPrivateKeyProvider();
-    } else {
-      throw WalletInitializationError.incompatibleChainNameSpace(
-        `Invalid chainNamespace: ${this.currentChainNamespace} found while connecting to wallet`
-      );
-    }
+    this.nodeDetailManager = new NodeDetailManager({ network });
+    this.privKeyProvider = provider;
   }
 
   async connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null> {
@@ -145,7 +100,7 @@ class Web3Auth implements IWeb3Auth {
     const { privKey } = retrieveSharesResponse;
     if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
     let finalPrivKey = privKey.padStart(64, "0");
-    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+    if (this.privKeyProvider === CHAIN_NAMESPACES.SOLANA) {
       finalPrivKey = getED25519Key(finalPrivKey).sk.toString("hex");
     }
     if (this.options.usePnPKey) {
