@@ -64,7 +64,10 @@ const web3auth = new Web3Auth({
 });
 
 const chainConfig: {
-  chainNamespace: "eip155",
+  displayName: "ETH Mainnet",
+  blockExplorer: "https://etherscan.io",
+  ticker: "ETH",
+  tickerName: "Ethereum",
   chainId: "0x1",
   rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
 };
