@@ -53,18 +53,25 @@ Web3Auth needs to initialise as soon as your app loads up to enable the user to 
 
 ```js
 import { Web3Auth } from "@web3auth/node-sdk";
+import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 
 //Initialize within your constructor
 const web3auth = new Web3Auth({
   clientId: "", // Get your Client ID from Web3Auth Dashboard
-  chainConfig: {
-    chainNamespace: "eip155",
-    chainId: "0x1",
-    rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
-  },
+  web3AuthNetwork: "mainnet",
+  usePnPKey: false, // Setting this to true returns the same key as PnP Web SDK. 
+  // By default, this SDK returns CoreKitKey.
 });
 
-web3auth.init({ network: "mainnet" });
+const chainConfig: {
+  chainNamespace: "eip155",
+  chainId: "0x1",
+  rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
+};
+
+const provider = new EthereumPrivateKeyProvider({ config: { chainConfig } })
+
+web3auth.init({ provider });
 ```
 
 ### Login your User
