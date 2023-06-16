@@ -1,11 +1,14 @@
-import { TORUS_NETWORK_TYPE } from "@toruslabs/fetch-node-details";
-import { CustomChainConfig, SafeEventEmitterProvider } from "@web3auth/base";
+import type { TORUS_NETWORK_TYPE } from "@toruslabs/constants";
+import type { SafeEventEmitterProvider } from "@web3auth/base";
+import type { IBaseProvider } from "@web3auth/base-provider";
+
+export type PrivateKeyProvider = IBaseProvider<string> & { getEd25519Key?: (privKey: string) => string };
 
 export interface TorusSubVerifierInfo {
   verifier: string;
   idToken: string;
 }
-export type InitParams = { network: TORUS_NETWORK_TYPE };
+export type InitParams = { provider: PrivateKeyProvider };
 
 export type LoginParams = {
   verifier: string;
@@ -33,12 +36,6 @@ export interface Web3AuthOptions {
    * You can set any random string for this on localhost.
    */
   clientId: string;
-  /**
-   * custom chain configuration for chainNamespace
-   *
-   * @defaultValue mainnet config of provided chainNamespace
-   */
-  chainConfig: Partial<CustomChainConfig> & Pick<CustomChainConfig, "chainNamespace">;
 
   /**
    * Web3Auth Network to use for login

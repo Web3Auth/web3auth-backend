@@ -1,3 +1,5 @@
+import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { expect } from "chai";
 
 import { Web3Auth } from "../src";
@@ -12,15 +14,22 @@ describe("web3auth backend", function () {
 
   beforeEach("one time execution before all tests", async function () {
     web3auth = new Web3Auth({
-      chainConfig: {
-        chainNamespace: "eip155",
-        chainId: "0x5", // goerli
-        rpcTarget: "https://rpc.ankr.com/eth_goerli",
-      },
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
       web3AuthNetwork: "testnet",
     });
-    web3auth.init();
+    const provider = new EthereumPrivateKeyProvider({
+      config: {
+        chainConfig: {
+          displayName: "ETH Mainnet",
+          blockExplorer: "https://etherscan.io",
+          ticker: "ETH",
+          tickerName: "Ethereum",
+          chainId: "0x5", // goerli
+          rpcTarget: "https://rpc.ankr.com/eth_goerli",
+        },
+      },
+    });
+    web3auth.init({ provider });
   });
   it("should return a provider with private key", async function () {
     const provider = await web3auth.connect({
@@ -51,23 +60,27 @@ describe("web3auth backend", function () {
 
   it("should be able to login with solana", async function () {
     const web3authSolana = new Web3Auth({
-      chainConfig: {
-        chainNamespace: "solana",
-        chainId: "0x3",
-        rpcTarget: "https://api.devnet.solana.com",
-      },
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
       web3AuthNetwork: "testnet",
     });
-    web3authSolana.init();
-    const provider = await web3authSolana.connect({
+    const chainConfig = {
+      displayName: "Solana Devnet",
+      blockExplorer: "https://explorer.solana.com/",
+      ticker: "sol",
+      tickerName: "Solana",
+      chainId: "0x3",
+      rpcTarget: "https://api.devnet.solana.com",
+    };
+    const provider = new SolanaPrivateKeyProvider({ config: { chainConfig } });
+    web3authSolana.init({ provider });
+    const w3aProvider = await web3authSolana.connect({
       verifier: TORUS_TEST_VERIFIER,
       verifierId: TORUS_TEST_EMAIL,
       idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
     });
-    expect(provider).to.not.equal(null);
+    expect(w3aProvider).to.not.equal(null);
 
-    const privKey = await provider?.request({ method: "solanaPrivateKey", params: [] });
+    const privKey = await w3aProvider?.request({ method: "solanaPrivateKey", params: [] });
     expect(privKey).to.equal(
       "296045a5599afefda7afbdd1bf236358baff580a0fe2db62ae5c1bbe817fbae49fe0788629bf18798cefdb361b63f2b69f384bdf93fb85f89a24ef427d6f8d10"
     );
