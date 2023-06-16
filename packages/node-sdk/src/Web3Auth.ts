@@ -1,25 +1,14 @@
 /* eslint-disable security/detect-object-injection */
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256 } from "@toruslabs/metadata-helpers";
-import { getED25519Key } from "@toruslabs/openlogin-ed25519";
 import { subkey } from "@toruslabs/openlogin-subkey";
 import type Torus from "@toruslabs/torus.js";
-import {
-  CHAIN_NAMESPACES,
-  ChainNamespaceType,
-  CustomChainConfig,
-  SafeEventEmitterProvider,
-  WalletInitializationError,
-  WalletLoginError,
-} from "@web3auth/base";
-import { BaseProvider } from "@web3auth/base-provider";
+import { CHAIN_NAMESPACES, ChainNamespaceType, SafeEventEmitterProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
 import fetch from "node-fetch";
 
-import { AggregateVerifierParams, IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
+import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
 
 (globalThis as any).fetch = fetch;
-
-type PrivateKeyProvider = BaseProvider<string>;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const TorusUtils = require("@toruslabs/torus.js/dist/torusUtils-node").default;
@@ -34,6 +23,8 @@ class Web3Auth implements IWeb3Auth {
 
   private privKeyProvider: PrivateKeyProvider | null = null;
 
+  private currentChainNamespace: ChainNamespaceType = CHAIN_NAMESPACES.EIP155;
+
   constructor(options: Web3AuthOptions) {
     this.options = {
       ...options,
@@ -42,6 +33,9 @@ class Web3Auth implements IWeb3Auth {
   }
 
   init({ provider }: { provider: PrivateKeyProvider }): void {
+    if (!provider || !provider.currentChainConfig || !provider.currentChainConfig.chainNamespace) {
+      throw WalletInitializationError.invalidParams('provider must be of type "PrivateKeyProvider" and have a valid chainNamespace');
+    }
     const { web3AuthNetwork: network } = this.options;
     this.torusUtils = new TorusUtils({
       enableOneKey: true,
@@ -52,6 +46,7 @@ class Web3Auth implements IWeb3Auth {
 
     this.nodeDetailManager = new NodeDetailManager({ network });
     this.privKeyProvider = provider;
+    this.currentChainNamespace = provider.currentChainConfig.chainNamespace;
   }
 
   async connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null> {
@@ -100,8 +95,8 @@ class Web3Auth implements IWeb3Auth {
     const { privKey } = retrieveSharesResponse;
     if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
     let finalPrivKey = privKey.padStart(64, "0");
-    if (this.privKeyProvider === CHAIN_NAMESPACES.SOLANA) {
-      finalPrivKey = getED25519Key(finalPrivKey).sk.toString("hex");
+    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+      finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
     }
     if (this.options.usePnPKey) {
       const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
