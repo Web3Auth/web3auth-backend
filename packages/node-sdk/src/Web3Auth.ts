@@ -95,12 +95,13 @@ class Web3Auth implements IWeb3Auth {
     const { privKey } = retrieveSharesResponse;
     if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
     let finalPrivKey = privKey.padStart(64, "0");
-    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
-      finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
-    }
     if (this.options.usePnPKey) {
       const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
       finalPrivKey = pnpPrivKey.padStart(64, "0");
+    }
+
+    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+      finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
     }
     await this.privKeyProvider.setupProvider(finalPrivKey);
     return this.privKeyProvider.provider;

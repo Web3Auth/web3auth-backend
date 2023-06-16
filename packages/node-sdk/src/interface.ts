@@ -1,6 +1,6 @@
-import { TORUS_NETWORK_TYPE } from "@toruslabs/constants";
-import { SafeEventEmitterProvider } from "@web3auth/base";
-import { IBaseProvider } from "@web3auth/base-provider";
+import type { TORUS_NETWORK_TYPE } from "@toruslabs/constants";
+import type { SafeEventEmitterProvider } from "@web3auth/base";
+import type { IBaseProvider } from "@web3auth/base-provider";
 
 export type PrivateKeyProvider = IBaseProvider<string> & { getEd25519Key?: (privKey: string) => string };
 
