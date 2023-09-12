@@ -37,8 +37,9 @@ class Web3Auth implements IWeb3Auth {
       network,
       clientId: this.options.clientId,
     });
+    Torus.enableLogging(this.options.enableLogging || false);
 
-    this.nodeDetailManager = new NodeDetailManager({ network });
+    this.nodeDetailManager = new NodeDetailManager({ network, enableLogging: this.options.enableLogging || false });
     this.privKeyProvider = provider;
     this.currentChainNamespace = provider.currentChainConfig.chainNamespace;
   }
