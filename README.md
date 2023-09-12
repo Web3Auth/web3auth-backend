@@ -82,7 +82,7 @@ await web3auth.connect({
 
 ## ⏪ Requirements
 
-- Node 14+
+- Node 18+
 
 ## 🩹 Examples
 
