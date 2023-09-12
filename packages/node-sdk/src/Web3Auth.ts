@@ -2,16 +2,11 @@
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256 } from "@toruslabs/metadata-helpers";
 import { subkey } from "@toruslabs/openlogin-subkey";
-import type Torus from "@toruslabs/torus.js";
+import Torus from "@toruslabs/torus.js";
 import { CHAIN_NAMESPACES, ChainNamespaceType, SafeEventEmitterProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
-import fetch from "node-fetch";
 
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
 
-(globalThis as any).fetch = fetch;
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const TorusUtils = require("@toruslabs/torus.js/dist/torusUtils-node").default;
 class Web3Auth implements IWeb3Auth {
   public provider: SafeEventEmitterProvider | null = null;
 
@@ -37,14 +32,14 @@ class Web3Auth implements IWeb3Auth {
       throw WalletInitializationError.invalidParams('provider must be of type "PrivateKeyProvider" and have a valid chainNamespace');
     }
     const { web3AuthNetwork: network } = this.options;
-    this.torusUtils = new TorusUtils({
+    this.torusUtils = new Torus({
       enableOneKey: true,
       network,
-      enableLogging: this.options.enableLogging,
       clientId: this.options.clientId,
-    }) as Torus;
+    });
+    Torus.enableLogging(this.options.enableLogging || false);
 
-    this.nodeDetailManager = new NodeDetailManager({ network });
+    this.nodeDetailManager = new NodeDetailManager({ network, enableLogging: this.options.enableLogging || false });
     this.privKeyProvider = provider;
     this.currentChainNamespace = provider.currentChainConfig.chainNamespace;
   }
@@ -57,9 +52,9 @@ class Web3Auth implements IWeb3Auth {
     const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
 
     // does the key assign
-    const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails, true);
+    const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails);
 
-    if (pubDetails.typeOfUser === "v1" || pubDetails.upgraded) {
+    if (pubDetails.metadata.typeOfUser === "v1" || pubDetails.metadata.upgraded) {
       throw WalletLoginError.fromCode(5000, "User has already enabled mfa, please use the @web3auth/web3auth-web sdk for login with mfa");
     }
 
@@ -92,8 +87,10 @@ class Web3Auth implements IWeb3Auth {
       finalIdToken
     );
 
-    const { privKey } = retrieveSharesResponse;
+    const { finalKeyData, oAuthKeyData } = retrieveSharesResponse;
+    const privKey = finalKeyData.privKey || oAuthKeyData.privKey;
     if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
+
     let finalPrivKey = privKey.padStart(64, "0");
     if (this.options.usePnPKey) {
       const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));

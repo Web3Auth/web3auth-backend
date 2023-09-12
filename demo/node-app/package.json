@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@web3auth/node-sdk": "^1.1.0",
-    "@web3auth/ethereum-provider": "^6.1.0"
+    "@web3auth/node-sdk": "^2.0.1",
+    "@web3auth/ethereum-provider": "^7.0.1"
   }
 }
