@@ -8,6 +8,8 @@ import { CHAIN_NAMESPACES, ChainNamespaceType, IProvider, WalletInitializationEr
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
 
 class Web3Auth implements IWeb3Auth {
+  public connected: boolean = false;
+
   readonly options: Web3AuthOptions;
 
   private torusUtils: Torus | null = null;
@@ -27,10 +29,6 @@ class Web3Auth implements IWeb3Auth {
 
   get provider(): IProvider | null {
     return this.privKeyProvider || null;
-  }
-
-  get connected(): boolean {
-    return Boolean(this.provider);
   }
 
   init({ provider }: { provider: PrivateKeyProvider }): void {
@@ -107,6 +105,7 @@ class Web3Auth implements IWeb3Auth {
       finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
     }
     await this.privKeyProvider.setupProvider(finalPrivKey);
+    this.connected = true;
     return this.privKeyProvider;
   }
 }
