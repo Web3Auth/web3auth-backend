@@ -5,7 +5,7 @@ const fs = require('fs');
 
 const web3auth = new Web3Auth({
   clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
-  web3AuthNetwork: "sapphire_mainnet", // Get your Network ID from Web3Auth Dashboard
+  web3AuthNetwork: "sapphire_mainnet", // Get your Network from Web3Auth Dashboard
 });
 
 const ethereumProvider = new EthereumPrivateKeyProvider({

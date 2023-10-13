@@ -45,7 +45,7 @@ npm install --save @web3auth/node-sdk
 
 Hop on to the [Web3Auth Dashboard](https://dashboard.web3auth.io/) and create a new project. Use the Client ID of the project to start your integration.
 
-![Web3Auth Dashboard](https://web3auth.io/docs/assets/images/project_plug_n_play-89c39ec42ad993107bb2485b1ce64b89.png)
+![Web3Auth Dashboard](https://github-production-user-asset-6210df.s3.amazonaws.com/6962565/272779464-043f6383-e671-4aa5-80fb-ec87c569e5ab.png)
 
 ### Initialize Web3Auth for your preferred blockchain
 
@@ -53,19 +53,23 @@ Web3Auth needs to initialise as soon as your app loads up to enable the user to 
 
 ```js
 import { Web3Auth } from "@web3auth/node-sdk";
+const { EthereumPrivateKeyProvider } = require("@web3auth/ethereum-provider");
 
-//Initialize within your constructor
 const web3auth = new Web3Auth({
-  clientId: "", // Get your Client ID from Web3Auth Dashboard
-  chainConfig: {
-    chainNamespace: "eip155",
-    chainId: "0x1",
-    rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
-  },
-  web3AuthNetwork: "mainnet",
+  clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
+  web3AuthNetwork: "sapphire_mainnet", // Get your Network from Web3Auth Dashboard
 });
 
-web3auth.init();
+const ethereumProvider = new EthereumPrivateKeyProvider({
+  config: {
+    chainConfig: {
+      chainId: "0x1",
+      rpcTarget: "https://rpc.ankr.com/eth",
+    },
+  },
+});
+
+web3auth.init({ provider: ethereumProvider });
 ```
 
 ### Login your User
@@ -73,11 +77,13 @@ web3auth.init();
 Once you're done initialising, logging in is as easy as:
 
 ```js
-await web3auth.connect({
-  verifier: "verifier-name", // replace this with your own verifier name
-  verifierId: "verifier-Id",
-  idToken: "JWT Token",
+const provider = await web3auth.connect({
+  verifier: "YOUR_VERIFIER_NAME", // replace this with your own verifier name
+  verifierId: "VERIFIER_ID_VALUE", // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
+  idToken: "JWT_TOKEN", // replace with your newly created unused JWT Token.
 });
+
+const eth_private_key = await provider.request({ method: "eth_private_key" });
 ```
 
 ## ⏪ Requirements
@@ -86,18 +92,16 @@ await web3auth.connect({
 
 ## 🩹 Examples
 
-Checkout the examples for your preferred blockchain and platform in our [examples repository](https://github.com/Web3Auth/examples/)
+Checkout the examples for your preferred blockchain and platform in our [pnp examples repository](https://github.com/Web3Auth/web3auth-pnp-examples/) or [core kit examples repository](https://github.com/Web3Auth/web3auth-core-kit-examples/).
 
 ## 🌐 Demo
 
 Checkout the [Web3Auth Demo](https://demo-app.web3auth.io/) to see how Web3Auth can be used in your application.
 
-Further checkout the [demo folder](https://github.com/Web3Auth/Web3Auth-backend/tree/master/demo) within `web3auth-backend` repository, which contains a Node.js example.
-
-Also, checkout the [demo folder](https://github.com/Web3Auth/Web3Auth/tree/master/demo) within `web3auth-web` repository, which contains other hosted demos for different usecases.
+Also, checkout the [demo folder](./demo/node-app/) within this repository.
 
 ## 💬 Troubleshooting and Discussions
 
-- Have a look at our [GitHub Discussions](https://github.com/Web3Auth/Web3Auth/discussions?discussions_q=sort%3Atop) to see if anyone has any questions or issues you might be having.
+- Have a look at our [Community Portal](https://web3auth.io/community/c/help-core-kit/core-kit-sfa-node/23) if you have any questions/issues related to this SDK.
 - Checkout our [Troubleshooting Documentation Page](https://web3auth.io/docs/troubleshooting) to know the common issues and solutions
-- Join our [Discord](https://discord.gg/web3auth) to join our community and get private integration support or help with your integration.
+- Join our [Forum](https://web3auth.io/community) to join our community.
