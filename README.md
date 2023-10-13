@@ -31,7 +31,7 @@ For using Web3Auth in the web, you have two choices of SDKs to get started with.
 
 [Web3Auth Plug and Play NoModal SDK `@web3auth/no-modal`](https://web3auth.io/docs/sdk/pnp/web/no-modal/): Web3Auth Plug and Play No Modal is the main SDK that consists of the core module of Web3Auth Plug and Play. This SDK gives you all the needed modules for implementing the Web3Auth features, giving you the flexibility of implementing your own UI to use all the functionalities.b3Auth SDK working in the backend.
 
-[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
+[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/core-kit/sfa-node): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
 
 ## ⚡ Quick Start
 
