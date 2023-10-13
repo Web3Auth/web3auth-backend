@@ -3,12 +3,12 @@ import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256 } from "@toruslabs/metadata-helpers";
 import { subkey } from "@toruslabs/openlogin-subkey";
 import Torus from "@toruslabs/torus.js";
-import { CHAIN_NAMESPACES, ChainNamespaceType, SafeEventEmitterProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
+import { CHAIN_NAMESPACES, ChainNamespaceType, IProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
 
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
 
 class Web3Auth implements IWeb3Auth {
-  public provider: SafeEventEmitterProvider | null = null;
+  public connected: boolean = false;
 
   readonly options: Web3AuthOptions;
 
@@ -25,6 +25,10 @@ class Web3Auth implements IWeb3Auth {
       ...options,
       web3AuthNetwork: options.web3AuthNetwork || "mainnet",
     };
+  }
+
+  get provider(): IProvider | null {
+    return this.privKeyProvider || null;
   }
 
   init({ provider }: { provider: PrivateKeyProvider }): void {
@@ -44,7 +48,7 @@ class Web3Auth implements IWeb3Auth {
     this.currentChainNamespace = provider.currentChainConfig.chainNamespace;
   }
 
-  async connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null> {
+  async connect(loginParams: LoginParams): Promise<IProvider | null> {
     if (!this.torusUtils || !this.nodeDetailManager || !this.privKeyProvider) throw new Error("Please call init first");
     const { verifier, verifierId, idToken, subVerifierInfoArray } = loginParams;
     const verifierDetails = { verifier, verifierId };
@@ -101,7 +105,8 @@ class Web3Auth implements IWeb3Auth {
       finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
     }
     await this.privKeyProvider.setupProvider(finalPrivKey);
-    return this.privKeyProvider.provider;
+    this.connected = true;
+    return this.privKeyProvider;
   }
 }
 
