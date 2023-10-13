@@ -8,7 +8,7 @@ Web3Auth is where passwordless auth meets non-custodial key infrastructure for W
 
 ## 📖 Documentation
 
-Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SDK Reference](https://web3auth.io/docs/sdk/web-backend/) to get started!
+Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SDK Reference](https://web3auth.io/docs/sdk/core-kit/sfa-node) to get started!
 
 ## 💡 Features
 
