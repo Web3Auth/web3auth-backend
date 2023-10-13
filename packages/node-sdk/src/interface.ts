@@ -18,6 +18,7 @@ export type LoginParams = {
 
 export interface IWeb3Auth {
   provider: SafeEventEmitterProvider | null;
+  connected: boolean;
   init(params: InitParams): void;
   connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null>;
 }

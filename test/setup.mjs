@@ -7,7 +7,7 @@ register({
   project: path.resolve(".", "tsconfig.json"),
   require: ["tsconfig-paths/register"],
   transpileOnly: true,
-  compilerOptions: { module: "esnext" },
+  compilerOptions: { module: "nodenext" },
 });
 
 Register({
