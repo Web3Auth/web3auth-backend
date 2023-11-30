@@ -1,8 +1,7 @@
 /* eslint-disable security/detect-object-injection */
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
-import { keccak256 } from "@toruslabs/metadata-helpers";
 import { subkey } from "@toruslabs/openlogin-subkey";
-import Torus from "@toruslabs/torus.js";
+import Torus, { keccak256 } from "@toruslabs/torus.js";
 import { CHAIN_NAMESPACES, ChainNamespaceType, IProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
 
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
@@ -49,17 +48,19 @@ class Web3Auth implements IWeb3Auth {
   }
 
   async connect(loginParams: LoginParams): Promise<IProvider | null> {
-    if (!this.torusUtils || !this.nodeDetailManager || !this.privKeyProvider) throw new Error("Please call init first");
+    if (!this.torusUtils || !this.nodeDetailManager || !this.privKeyProvider) throw WalletInitializationError.notReady("Please call init first.");
     const { verifier, verifierId, idToken, subVerifierInfoArray } = loginParams;
+    if (!verifier || !verifierId || !idToken) throw WalletInitializationError.invalidParams("verifier or verifierId or idToken  required");
     const verifierDetails = { verifier, verifierId };
 
     const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
 
     // does the key assign
-    const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails);
-
-    if (pubDetails.metadata.typeOfUser === "v1" || pubDetails.metadata.upgraded) {
-      throw WalletLoginError.fromCode(5000, "User has already enabled mfa, please use the @web3auth/web3auth-web sdk for login with mfa");
+    if (this.torusUtils.isLegacyNetwork) {
+      const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails);
+      if (pubDetails.metadata.upgraded) {
+        throw WalletLoginError.mfaEnabled();
+      }
     }
 
     let finalIdToken = idToken;
@@ -77,7 +78,7 @@ class Web3Auth implements IWeb3Auth {
 
       const inputString = aggregateIdTokenSeeds.join(String.fromCharCode(29));
       const inputBuffer = Buffer.from(inputString, "utf8");
-      finalIdToken = Buffer.from(keccak256(inputBuffer)).toString("hex");
+      finalIdToken = keccak256(inputBuffer).slice(2);
 
       aggregateVerifierParams.verifier_id = verifierId;
       finalVerifierParams = aggregateVerifierParams;
@@ -90,6 +91,9 @@ class Web3Auth implements IWeb3Auth {
       finalVerifierParams,
       finalIdToken
     );
+    if (retrieveSharesResponse.metadata.upgraded) {
+      throw WalletLoginError.mfaEnabled();
+    }
 
     const { finalKeyData, oAuthKeyData } = retrieveSharesResponse;
     const privKey = finalKeyData.privKey || oAuthKeyData.privKey;
@@ -102,6 +106,9 @@ class Web3Auth implements IWeb3Auth {
     }
 
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+      if (!this.privKeyProvider.getEd25519Key) {
+        throw WalletLoginError.fromCode(5000, "Private key provider is not valid, Missing getEd25519Key function");
+      }
       finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
     }
     await this.privKeyProvider.setupProvider(finalPrivKey);
