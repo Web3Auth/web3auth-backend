@@ -8,7 +8,7 @@ Web3Auth is where passwordless auth meets non-custodial key infrastructure for W
 
 ## 📖 Documentation
 
-Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SDK Reference](https://web3auth.io/docs/sdk/web-backend/) to get started!
+Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SDK Reference](https://web3auth.io/docs/sdk/core-kit/sfa-node) to get started!
 
 ## 💡 Features
 
@@ -27,11 +27,11 @@ Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SD
 
 For using Web3Auth in the web, you have two choices of SDKs to get started with.
 
-[Web3Auth Plug and Play UI SDK `@web3auth/modal`](https://web3auth.io/docs/sdk/web/web3auth/): A simple and easy to use SDK that will give you a simple modular way of implementing Web3Auth directly within your application. You can use the pre-configured Web3Auth Modal UI and whitelabel it according to your needs.
+[Web3Auth Plug and Play Modal SDK `@web3auth/modal`](https://web3auth.io/docs/sdk/pnp/web/modal): This package provides main class for using default Web3Auth Modal. The package includes all of our packages and gives you a simple way of implementing Web3Auth within your interface. Additionally, it is a child class of @web3auth/no-modal package.
 
-[Web3Auth Plug and Play Core SDK `@web3auth/core`](https://web3auth.io/docs/sdk/web/core/): The core module implemeting all the Web3Auth features you need and giving you the flexibilty of using your own UI with the Web3Auth SDK working in the backend.
+[Web3Auth Plug and Play NoModal SDK `@web3auth/no-modal`](https://web3auth.io/docs/sdk/pnp/web/no-modal/): Web3Auth Plug and Play No Modal is the main SDK that consists of the core module of Web3Auth Plug and Play. This SDK gives you all the needed modules for implementing the Web3Auth features, giving you the flexibility of implementing your own UI to use all the functionalities.b3Auth SDK working in the backend.
 
-[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
+[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/core-kit/sfa-node): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
 
 ## ⚡ Quick Start
 
