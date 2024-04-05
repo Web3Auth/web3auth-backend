@@ -23,6 +23,7 @@ class Web3Auth implements IWeb3Auth {
     this.options = {
       ...options,
       web3AuthNetwork: options.web3AuthNetwork || "mainnet",
+      useImportKeyFlow: options.useImportKeyFlow !== undefined ? options.useImportKeyFlow : true,
     };
   }
 
@@ -83,13 +84,15 @@ class Web3Auth implements IWeb3Auth {
       aggregateVerifierParams.verifier_id = verifierId;
       finalVerifierParams = aggregateVerifierParams;
     }
-
     const retrieveSharesResponse = await this.torusUtils.retrieveShares(
       torusNodeEndpoints,
       torusIndexes,
       verifier,
       finalVerifierParams,
-      finalIdToken
+      finalIdToken,
+      torusNodePub,
+      {},
+      this.options.useImportKeyFlow,
     );
     if (retrieveSharesResponse.metadata.upgraded) {
       throw WalletLoginError.mfaEnabled();

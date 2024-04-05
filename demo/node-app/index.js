@@ -11,6 +11,11 @@ const web3auth = new Web3Auth({
 const ethereumProvider = new EthereumPrivateKeyProvider({
   config: {
     chainConfig: {
+      chainNamespace: "eip155",
+      displayName: "ETH Mainnet",
+      blockExplorerUrl: "https://etherscan.io",
+      ticker: "ETH",
+      tickerName: "Ethereum",
       chainId: "0x1",
       rpcTarget: "https://rpc.ankr.com/eth",
     },
