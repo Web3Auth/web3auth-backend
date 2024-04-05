@@ -1,3 +1,4 @@
+import { CustomChainConfig } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { expect } from "chai";
@@ -7,7 +8,7 @@ import { generateIdToken } from "./helpers";
 
 const TORUS_TEST_EMAIL = "hello@tor.us";
 const TORUS_TEST_VERIFIER = "torus-test-health";
-const TORUS_TEST_AGGREGATE_VERIFIER = "torus-test-health-aggregate";
+const TORUS_TEST_AGGREGATE_VERIFIER = "torus-aggregate-sapphire-mainnet";
 
 describe("web3auth backend", function () {
   let web3auth: Web3Auth;
@@ -15,13 +16,14 @@ describe("web3auth backend", function () {
   beforeEach("one time execution before all tests", async function () {
     web3auth = new Web3Auth({
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
-      web3AuthNetwork: "testnet",
+      web3AuthNetwork: "sapphire_mainnet",
     });
     const provider = new EthereumPrivateKeyProvider({
       config: {
         chainConfig: {
+          chainNamespace: "eip155",
           displayName: "ETH Mainnet",
-          blockExplorer: "https://etherscan.io",
+          blockExplorerUrl: "https://etherscan.io",
           ticker: "ETH",
           tickerName: "Ethereum",
           chainId: "0x5", // goerli
@@ -63,9 +65,10 @@ describe("web3auth backend", function () {
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
       web3AuthNetwork: "testnet",
     });
-    const chainConfig = {
+    const chainConfig: CustomChainConfig = {
+      chainNamespace: "solana",
       displayName: "Solana Devnet",
-      blockExplorer: "https://explorer.solana.com/",
+      blockExplorerUrl: "https://explorer.solana.com/",
       ticker: "sol",
       tickerName: "Solana",
       chainId: "0x3",
