@@ -22,17 +22,19 @@ describe("web3auth backend", function () {
       config: {
         chainConfig: {
           chainNamespace: "eip155",
-          displayName: "ETH Mainnet",
-          blockExplorerUrl: "https://etherscan.io",
+          chainId: "0xaa36a7",
+          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
+          displayName: "Ethereum Sepolia Testnet",
+          blockExplorerUrl: "https://sepolia.etherscan.io",
           ticker: "ETH",
           tickerName: "Ethereum",
-          chainId: "0x5", // goerli
-          rpcTarget: "https://rpc.ankr.com/eth_goerli",
+          decimals: 18,
         },
       },
     });
     web3auth.init({ provider });
   });
+
   it("should return a provider with private key", async function () {
     const provider = await web3auth.connect({
       verifier: TORUS_TEST_VERIFIER,
@@ -42,7 +44,7 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("296045a5599afefda7afbdd1bf236358baff580a0fe2db62ae5c1bbe817fbae4");
+    expect(privKey).to.equal("dfb39b84e0c64b8c44605151bf8670ae6eda232056265434729b6a8a50fa3419");
   });
 
   it("should be return a provider with private key for aggregate login", async function () {
@@ -57,7 +59,7 @@ describe("web3auth backend", function () {
     expect(provider).to.not.equal(null);
 
     const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("ad47959db4cb2e63e641bac285df1b944f54d1a1cecdaeea40042b60d53c35d2");
+    expect(privKey).to.equal("9a8c7d58d4246507cdd6b2c34850eac52a35c4d6ebea8cefbec26010ad8011d6");
   });
 
   it("should be able to login with solana", async function () {
