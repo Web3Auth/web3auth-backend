@@ -92,7 +92,7 @@ class Web3Auth implements IWeb3Auth {
       finalIdToken,
       torusNodePub,
       {},
-      this.options.useImportKeyFlow,
+      !this.options.useImportKeyFlow
     );
     if (retrieveSharesResponse.metadata.upgraded) {
       throw WalletLoginError.mfaEnabled();
