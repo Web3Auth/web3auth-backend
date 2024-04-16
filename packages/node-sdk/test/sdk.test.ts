@@ -1,3 +1,4 @@
+import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { expect } from "chai";
@@ -20,17 +21,19 @@ describe("web3auth backend", function () {
     const provider = new EthereumPrivateKeyProvider({
       config: {
         chainConfig: {
-          displayName: "ETH Mainnet",
-          blockExplorer: "https://etherscan.io",
+          chainNamespace: CHAIN_NAMESPACES.EIP155,
+          displayName: "ETH Sepolia",
+          blockExplorerUrl: "https://sepolia.etherscan.io",
           ticker: "ETH",
           tickerName: "Ethereum",
-          chainId: "0x5", // goerli
-          rpcTarget: "https://rpc.ankr.com/eth_goerli",
+          chainId: "0xaa36a7", // sepolia
+          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
         },
       },
     });
     web3auth.init({ provider });
   });
+
   it("should return a provider with private key", async function () {
     const provider = await web3auth.connect({
       verifier: TORUS_TEST_VERIFIER,
@@ -63,9 +66,10 @@ describe("web3auth backend", function () {
       clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
       web3AuthNetwork: "testnet",
     });
-    const chainConfig = {
+    const chainConfig: CustomChainConfig = {
+      chainNamespace: CHAIN_NAMESPACES.SOLANA,
       displayName: "Solana Devnet",
-      blockExplorer: "https://explorer.solana.com/",
+      blockExplorerUrl: "https://explorer.solana.com/",
       ticker: "sol",
       tickerName: "Solana",
       chainId: "0x3",
