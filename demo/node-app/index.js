@@ -11,6 +11,7 @@ const web3auth = new Web3Auth({
 const ethereumProvider = new EthereumPrivateKeyProvider({
   config: {
     chainConfig: {
+      chainNamespace: "eip155",
       chainId: "0x1",
       rpcTarget: "https://rpc.ankr.com/eth",
     },
@@ -47,4 +48,5 @@ const connect = async () => {
   console.log("ETH Private Key: ", eth_private_key);
   process.exit(0);
 };
+
 connect();
