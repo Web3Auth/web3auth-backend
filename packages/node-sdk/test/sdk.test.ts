@@ -1,9 +1,9 @@
-import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
+import { CHAIN_NAMESPACES, CustomChainConfig, WalletInitializationError } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { expect } from "chai";
 
-import { Web3Auth } from "../src";
+import { LoginParams, Web3Auth } from "../src";
 import { generateIdToken } from "./helpers";
 
 const TORUS_TEST_EMAIL = "hello@tor.us";
@@ -32,6 +32,44 @@ describe("web3auth backend", function () {
       },
     });
     web3auth.init({ provider });
+  });
+
+  it("should throw WalletInitializationError for invalid provider", function () {
+    const invalidWeb3auth = new Web3Auth({
+      clientId: "test-client-id",
+    });
+
+    const invalidProvider = {
+      // Missing currentChainConfig and chainNamespace
+    };
+
+    expect(() => {
+      invalidWeb3auth.init({ provider: invalidProvider as EthereumPrivateKeyProvider });
+    }).throw(WalletInitializationError);
+
+    expect(() => {
+      web3auth.init({ provider: invalidProvider as EthereumPrivateKeyProvider });
+    }).throw('provider must be of type "PrivateKeyProvider" and have a valid chainNamespace');
+  });
+
+  it("should throw WalletInitializationError for missing verifier, verifierId, or idToken", async function () {
+    const invalidLoginParams = [
+      { verifierId: "test@example.com", idToken: "valid-token" },
+      { verifier: "torus", idToken: "valid-token" },
+      { verifier: "torus", verifierId: "test@example.com" },
+    ];
+
+    for (const params of invalidLoginParams) {
+      try {
+        await web3auth.connect(params as LoginParams);
+        expect.fail("Expected an error to be thrown");
+      } catch (error) {
+        expect(error).to.be.instanceOf(WalletInitializationError);
+        if (error instanceof Error) {
+          expect(error.message).to.equal("Invalid params passed in, verifier or verifierId or idToken  required");
+        }
+      }
+    }
   });
 
   it("should return a provider with private key", async function () {
