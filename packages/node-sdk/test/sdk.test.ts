@@ -1,4 +1,4 @@
-import { CustomChainConfig } from "@web3auth/base";
+import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { expect } from "chai";
@@ -21,14 +21,13 @@ describe("web3auth backend", function () {
     const provider = new EthereumPrivateKeyProvider({
       config: {
         chainConfig: {
-          chainNamespace: "eip155",
-          chainId: "0xaa36a7",
-          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
-          displayName: "Ethereum Sepolia Testnet",
+          chainNamespace: CHAIN_NAMESPACES.EIP155,
+          displayName: "ETH Sepolia",
           blockExplorerUrl: "https://sepolia.etherscan.io",
           ticker: "ETH",
           tickerName: "Ethereum",
-          decimals: 18,
+          chainId: "0xaa36a7", // sepolia
+          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
         },
       },
     });
@@ -68,7 +67,7 @@ describe("web3auth backend", function () {
       web3AuthNetwork: "testnet",
     });
     const chainConfig: CustomChainConfig = {
-      chainNamespace: "solana",
+      chainNamespace: CHAIN_NAMESPACES.SOLANA,
       displayName: "Solana Devnet",
       blockExplorerUrl: "https://explorer.solana.com/",
       ticker: "sol",

@@ -1,7 +1,7 @@
 {
   "author": "",
   "dependencies": {
-    "@web3auth/ethereum-provider": "^8.0.1",
+    "@web3auth/ethereum-provider": "^9.0.0",
     "@web3auth/node-sdk": "../..",
     "jsonwebtoken": "^9.0.2"
   },

@@ -1,12 +1,12 @@
 /* eslint-disable security/detect-object-injection */
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
-import { subkey } from "@toruslabs/openlogin-subkey";
-import Torus, { keccak256 } from "@toruslabs/torus.js";
+import { keccak256, Torus } from "@toruslabs/torus.js";
+import { subkey } from "@web3auth/auth";
 import { CHAIN_NAMESPACES, ChainNamespaceType, IProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
 
 import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
 
-class Web3Auth implements IWeb3Auth {
+export class Web3Auth implements IWeb3Auth {
   public connected: boolean = false;
 
   readonly options: Web3AuthOptions;
@@ -54,15 +54,7 @@ class Web3Auth implements IWeb3Auth {
     if (!verifier || !verifierId || !idToken) throw WalletInitializationError.invalidParams("verifier or verifierId or idToken  required");
     const verifierDetails = { verifier, verifierId };
 
-    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
-
-    // does the key assign
-    if (this.torusUtils.isLegacyNetwork) {
-      const pubDetails = await this.torusUtils.getUserTypeAndAddress(torusNodeEndpoints, torusNodePub, verifierDetails);
-      if (pubDetails.metadata.upgraded) {
-        throw WalletLoginError.mfaEnabled();
-      }
-    }
+    const { torusNodeEndpoints, torusIndexes } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
 
     let finalIdToken = idToken;
     let finalVerifierParams = { verifier_id: verifierId };
@@ -119,5 +111,3 @@ class Web3Auth implements IWeb3Auth {
     return this.privKeyProvider;
   }
 }
-
-export default Web3Auth;
