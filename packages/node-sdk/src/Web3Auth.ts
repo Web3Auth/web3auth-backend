@@ -25,7 +25,7 @@ export class Web3Auth implements IWeb3Auth {
     const network = options.web3AuthNetwork || "mainnet";
     this.options = {
       ...options,
-      web3AuthNetwork: options.web3AuthNetwork || "mainnet",
+      web3AuthNetwork: network,
       useDKG: options.useDKG !== undefined ? options.useDKG : this.getUseDKGDefaultValue(network),
     };
   }
