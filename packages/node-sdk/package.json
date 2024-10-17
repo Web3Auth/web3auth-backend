@@ -14,10 +14,10 @@
   "dependencies": {
     "@toruslabs/constants": "^14.0.0",
     "@toruslabs/fetch-node-details": "^14.0.1",
-    "@toruslabs/torus.js": "^14.0.2",
-    "@web3auth/auth": "^9.3.3",
-    "@web3auth/base": "^9.0.0",
-    "@web3auth/base-provider": "^9.0.0"
+    "@toruslabs/torus.js": "^15.1.0",
+    "@web3auth/auth": "^9.4.1",
+    "@web3auth/base": "^9.2.3",
+    "@web3auth/base-provider": "^9.2.3"
   },
   "devDependencies": {
     "@web3auth/ethereum-provider": "^9.0.0",
