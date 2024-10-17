@@ -45,7 +45,7 @@ const connect = async () => {
     idToken: token, // replace with your newly created unused JWT Token.
   });
   const eth_private_key = await provider.request({ method: "eth_private_key" });
-  console.log("ETH Private Key: ", eth_private_key);
+  console.log("ETH Private Key: ", eth_private_key, sub);
   process.exit(0);
 };
 

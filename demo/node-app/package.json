@@ -3,7 +3,6 @@
   "dependencies": {
     "@web3auth/ethereum-provider": "^9.0.0",
     "@web3auth/node-sdk": "../..",
-    "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2"
   },
   "description": "Web3Auth's Node SDK Demo App",

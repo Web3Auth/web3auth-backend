@@ -1,4 +1,5 @@
 /* eslint-disable security/detect-object-injection */
+import { LEGACY_NETWORKS_ROUTE_MAP, TORUS_LEGACY_NETWORK_TYPE, TORUS_SAPPHIRE_NETWORK_TYPE } from "@toruslabs/constants";
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256, Torus } from "@toruslabs/torus.js";
 import { subkey } from "@web3auth/auth";
@@ -20,9 +21,12 @@ export class Web3Auth implements IWeb3Auth {
   private currentChainNamespace: ChainNamespaceType = CHAIN_NAMESPACES.EIP155;
 
   constructor(options: Web3AuthOptions) {
+    this.validateConstructorOptions(options);
+    const network = options.web3AuthNetwork || "mainnet";
     this.options = {
       ...options,
-      web3AuthNetwork: options.web3AuthNetwork || "mainnet",
+      web3AuthNetwork: network,
+      useDKG: options.useDKG !== undefined ? options.useDKG : this.getUseDKGDefaultValue(network),
     };
   }
 
@@ -53,7 +57,7 @@ export class Web3Auth implements IWeb3Auth {
     if (!verifier || !verifierId || !idToken) throw WalletInitializationError.invalidParams("verifier or verifierId or idToken  required");
     const verifierDetails = { verifier, verifierId };
 
-    const { torusNodeEndpoints, torusIndexes } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
+    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
 
     let finalIdToken = idToken;
     let finalVerifierParams = { verifier_id: verifierId };
@@ -75,14 +79,15 @@ export class Web3Auth implements IWeb3Auth {
       aggregateVerifierParams.verifier_id = verifierId;
       finalVerifierParams = aggregateVerifierParams;
     }
-
-    const retrieveSharesResponse = await this.torusUtils.retrieveShares(
-      torusNodeEndpoints,
-      torusIndexes,
+    const retrieveSharesResponse = await this.torusUtils.retrieveShares({
+      endpoints: torusNodeEndpoints,
+      indexes: torusIndexes,
       verifier,
-      finalVerifierParams,
-      finalIdToken
-    );
+      verifierParams: finalVerifierParams,
+      idToken: finalIdToken,
+      nodePubkeys: torusNodePub,
+      useDkg: this.options.useDKG,
+    });
     if (retrieveSharesResponse.metadata.upgraded) {
       throw WalletLoginError.mfaEnabled();
     }
@@ -106,5 +111,21 @@ export class Web3Auth implements IWeb3Auth {
     await this.privKeyProvider.setupProvider(finalPrivKey);
     this.connected = true;
     return this.privKeyProvider;
+  }
+
+  private getUseDKGDefaultValue(network: TORUS_LEGACY_NETWORK_TYPE | TORUS_SAPPHIRE_NETWORK_TYPE): boolean {
+    // only dkg flow is supported for legacy networks
+    if (LEGACY_NETWORKS_ROUTE_MAP[network as TORUS_LEGACY_NETWORK_TYPE]) {
+      return true;
+    }
+    // for rest networks both flows are supported, but default is non dkg.
+    return false;
+  }
+
+  private validateConstructorOptions(options: Web3AuthOptions): void {
+    // non dkg flow is not supported in legacy networks
+    if (options.useDKG === false && LEGACY_NETWORKS_ROUTE_MAP[options.web3AuthNetwork as TORUS_LEGACY_NETWORK_TYPE]) {
+      throw WalletInitializationError.invalidParams("useDKG cannot be false for legacy networks");
+    }
   }
 }
