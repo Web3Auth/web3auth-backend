@@ -1,26 +1,29 @@
-import type { TORUS_NETWORK_TYPE } from "@toruslabs/constants";
-import type { IBaseProvider, SafeEventEmitterProvider } from "@web3auth/base";
+import { TransactionSigner } from "@solana/signers";
+import type { ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
+import { Wallet } from "ethers";
 
 export type PrivateKeyProvider = IBaseProvider<string> & { getEd25519Key?: (privKey: string) => string };
 
-export interface TorusSubVerifierInfo {
+export interface TorusSubConnectionInfo {
   verifier: string;
   idToken: string;
 }
 export type InitParams = { provider: PrivateKeyProvider };
 
 export type LoginParams = {
-  verifier: string;
-  verifierId: string;
+  userId: string;
   idToken: string;
-  subVerifierInfoArray?: TorusSubVerifierInfo[];
+  authConnectionId: string;
+  groupedAuthConnectionId?: string;
 };
 
 export interface IWeb3Auth {
-  provider: SafeEventEmitterProvider | null;
+  currentChainId: string;
+  currentChainNamespace: ChainNamespaceType;
+  currentChain: CustomChainConfig;
   connected: boolean;
-  init(params: InitParams): void;
-  connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null>;
+  init(): Promise<void>;
+  connect(loginParams: LoginParams): Promise<Wallet | TransactionSigner | null>;
 }
 
 export type AggregateVerifierParams = {
@@ -41,7 +44,18 @@ export interface Web3AuthOptions {
    * Web3Auth Network to use for login
    * @defaultValue mainnet
    */
-  web3AuthNetwork?: TORUS_NETWORK_TYPE;
+  web3AuthNetwork?: WEB3AUTH_NETWORK_TYPE;
+
+  /**
+   * multiple chain configurations,
+   * only provided chains will be used
+   */
+  chains?: CustomChainConfig[];
+
+  /**
+   * default chain Id to use
+   */
+  defaultChainId?: string;
 
   /**
    * setting to true will enable logs
@@ -52,7 +66,7 @@ export interface Web3AuthOptions {
 
   /**
    * setting this to true returns the same key as web sdk (i.e., plug n play key)
-   * By default, this sdk returns CoreKitKey
+   * By default, this sdk returns SFAKey
    */
   usePnPKey?: boolean;
 
@@ -63,4 +77,11 @@ export interface Web3AuthOptions {
    * Legacy networks doesnt support non dkg flow. So this is always true for legacy networks.
    */
   useDKG?: boolean;
+
+  /**
+   * setting this to true will check the commitment of the shares
+   *
+   * @defaultValue true
+   */
+  checkCommitment?: boolean;
 }

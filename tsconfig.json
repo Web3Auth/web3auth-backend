@@ -2,7 +2,7 @@
   "extends": "@toruslabs/config/tsconfig.default.json",
   "compilerOptions": {
     "moduleResolution": "NodeNext",
-    "module": "Node16",
+    "module": "NodeNext",
     "baseUrl": "./",
     "paths": {
       "@web3auth/*": ["packages/*"]

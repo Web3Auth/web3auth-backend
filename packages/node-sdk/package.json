@@ -12,16 +12,16 @@
     "lint": "eslint --fix 'src/**/*.ts'"
   },
   "dependencies": {
-    "@toruslabs/constants": "^14.0.0",
-    "@toruslabs/fetch-node-details": "^14.0.1",
-    "@toruslabs/torus.js": "^15.1.0",
-    "@web3auth/auth": "^9.4.1",
-    "@web3auth/base": "^9.2.3",
-    "@web3auth/base-provider": "^9.2.3"
-  },
-  "devDependencies": {
-    "@web3auth/ethereum-provider": "^9.0.0",
-    "@web3auth/solana-provider": "^9.0.0"
+    "@segment/analytics-node": "^2.3.0",
+    "@solana/keys": "^2.3.0",
+    "@solana/signers": "^2.3.0",
+    "@toruslabs/constants": "^15.0.0",
+    "@toruslabs/fetch-node-details": "^15.0.0",
+    "@toruslabs/http-helpers": "^8.1.1",
+    "@toruslabs/torus.js": "^16.0.0",
+    "@web3auth/auth": "^10.5.0",
+    "@web3auth/no-modal": "^10.2.0",
+    "ethers": "^6.15.0"
   },
   "keywords": [],
   "author": "",
