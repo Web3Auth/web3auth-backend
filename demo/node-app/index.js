@@ -1,30 +1,18 @@
 const { Web3Auth } = require("@web3auth/node-sdk");
-const { EthereumPrivateKeyProvider } = require("@web3auth/ethereum-provider");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 
 const web3auth = new Web3Auth({
+  defaultChainId: "aptos-devnet",
   clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
   web3AuthNetwork: "sapphire_mainnet", // Get your Network from Web3Auth Dashboard
 });
 
-const ethereumProvider = new EthereumPrivateKeyProvider({
-  config: {
-    chainConfig: {
-      chainNamespace: "eip155",
-      chainId: "0x1",
-      rpcTarget: "https://rpc.ankr.com/eth",
-    },
-  },
-});
+const privateKey = fs.readFileSync("privateKey.pem");
 
-web3auth.init({ provider: ethereumProvider });
+const sub = Math.random().toString(36).substring(7);
 
-var privateKey = fs.readFileSync("privateKey.pem");
-
-var sub = Math.random().toString(36).substring(7);
-
-var token = jwt.sign(
+const token = jwt.sign(
   {
     sub: sub,
     name: "Mohammad Yashovardhan Mishra Jang",
@@ -38,14 +26,28 @@ var token = jwt.sign(
   { algorithm: "RS256", keyid: "2ma4enu1kdvw5bo9xsfpi3gcjzrt6q78yl0h" }
 );
 
+const initWeb3Auth = async () => {
+  await web3auth.init();
+  console.log("Web3Auth initialized", web3auth.projectConfig);
+};
+
 const connect = async () => {
-  const provider = await web3auth.connect({
-    verifier: "w3a-node-demo", // replace with your verifier name
-    verifierId: sub, // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
+  await initWeb3Auth();
+  const result = await web3auth.connect({
+    authConnectionId: "w3a-node-demo", // replace with your verifier name
+    userId: sub, // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
     idToken: token, // replace with your newly created unused JWT Token.
   });
-  const eth_private_key = await provider.request({ method: "eth_private_key" });
-  console.log("ETH Private Key: ", eth_private_key, sub);
+  if (result.chainNamespace === "eip155") {
+    const address = await result.provider.getAddress();
+    console.log("Address: ", address);
+  } else if (result.chainNamespace === "solana") {
+    const publicKey = result.provider.address;
+    console.log("Public Key: ", publicKey);
+  } else {
+    const privateKey = await result.provider.request({ method: "private_key" });
+    console.log("Private Key: ", privateKey);
+  }
   process.exit(0);
 };
 

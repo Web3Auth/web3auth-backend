@@ -1,3 +1,5 @@
+import { createKeyPairFromBytes } from "@solana/keys";
+import { createSignerFromKeyPair } from "@solana/signers";
 import { LEGACY_NETWORKS_ROUTE_MAP, TORUS_LEGACY_NETWORK_TYPE, TORUS_SAPPHIRE_NETWORK_TYPE } from "@toruslabs/constants";
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256, Torus, VerifierParams } from "@toruslabs/torus.js";
@@ -6,6 +8,7 @@ import {
   ANALYTICS_EVENTS,
   CHAIN_NAMESPACES,
   type ChainNamespaceType,
+  CommonPrivateKeyProvider,
   type CustomChainConfig,
   fetchProjectConfig,
   getCaipChainId,
@@ -18,12 +21,9 @@ import {
   WalletLoginError,
 } from "@web3auth/no-modal";
 import { JsonRpcProvider, Wallet } from "ethers";
-import type { TransactionSigner } from "@solana/signers";
-import { createSignerFromKeyPair } from "@solana/signers";
-import { createKeyPairFromBytes } from "@solana/keys";
 
 import { SDK_TYPE, SDK_VERSION, SegmentAnalytics } from "./analytics";
-import { IWeb3Auth, LoginParams, Web3AuthOptions } from "./interface";
+import { IWeb3Auth, LoginParams, WalletResult, Web3AuthOptions } from "./interface";
 
 export class Web3Auth implements IWeb3Auth {
   public connected: boolean = false;
@@ -35,6 +35,8 @@ export class Web3Auth implements IWeb3Auth {
   private nodeDetailManager: NodeDetailManager | null = null;
 
   private analytics: SegmentAnalytics | null = null;
+
+  private projectConfig: ProjectConfig | null = null;
 
   constructor(options: Web3AuthOptions) {
     this.validateConstructorOptions(options);
@@ -70,7 +72,6 @@ export class Web3Auth implements IWeb3Auth {
       web3auth_network: this.options.web3AuthNetwork,
     });
     this.analytics.setGlobalProperties({
-      dapp_url: window.location.origin,
       sdk_name: SDK_TYPE,
       sdk_version: SDK_VERSION,
       // Required for organization analytics
@@ -91,7 +92,8 @@ export class Web3Auth implements IWeb3Auth {
       throw WalletInitializationError.notReady("failed to fetch project configurations", error);
     }
 
-    this.initChainsConfig(projectConfig);
+    this.projectConfig = projectConfig;
+    this.initChainsConfig();
     this.analytics.setGlobalProperties({ team_id: projectConfig.teamId });
 
     this.torusUtils = new Torus({
@@ -110,7 +112,7 @@ export class Web3Auth implements IWeb3Auth {
     });
   }
 
-  async connect(loginParams: LoginParams): Promise<Wallet | TransactionSigner|  null> {
+  async connect(loginParams: LoginParams): Promise<WalletResult> {
     if (!this.torusUtils || !this.nodeDetailManager) throw WalletInitializationError.notReady("Please call init first.");
 
     if (!loginParams.idToken || !loginParams.userId || !loginParams.authConnectionId)
@@ -180,10 +182,10 @@ export class Web3Auth implements IWeb3Auth {
     }
   }
 
-  private initChainsConfig(projectConfig: ProjectConfig) {
+  private initChainsConfig() {
     // merge chains from project config with core options, core options chains will take precedence over project config chains
     const chainMap = new Map<string, CustomChainConfig>();
-    const allChains = [...(projectConfig.chains || []), ...(this.options.chains || [])];
+    const allChains = [...(this.projectConfig.chains || []), ...(this.options.chains || [])];
     for (const chain of allChains) {
       const existingChain = chainMap.get(chain.chainId);
       if (!existingChain) chainMap.set(chain.chainId, chain);
@@ -246,21 +248,28 @@ export class Web3Auth implements IWeb3Auth {
     });
   }
 
-  private async getWallet(privateKey: string): Promise<Wallet | TransactionSigner> {
+  private async getWallet(privateKey: string): Promise<WalletResult> {
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
       const ed25519Key = getED25519Key(privateKey).sk;
       const keyPair = await createKeyPairFromBytes(new Uint8Array(ed25519Key));
       const signer = await createSignerFromKeyPair(keyPair);
-      this.connected = true;
-      return signer;
+      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider: signer };
+    } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
+      const ethersWallet = new Wallet(privateKey);
+      const provider = new JsonRpcProvider(this.currentChain.rpcTarget);
+      const signer = ethersWallet.connect(provider);
+      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider: signer };
+    } else {
+      const provider = new CommonPrivateKeyProvider({
+        config: {
+          keyExportEnabled: this.projectConfig.enableKeyExport,
+          chain: this.currentChain,
+          chains: this.options.chains,
+        },
+      });
+      await provider.setupProvider(privateKey);
+      return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider };
     }
-
-    // create ethers wallet for Evm chains.
-    const ethersWallet = new Wallet(privateKey);
-    const provider = new JsonRpcProvider(this.currentChain.rpcTarget);
-    const signer = ethersWallet.connect(provider);
-    this.connected = true;
-    return signer;
   }
 
   private getInitializationTrackData() {

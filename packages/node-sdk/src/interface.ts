@@ -1,14 +1,14 @@
-import { TransactionSigner } from "@solana/signers";
-import type { ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
-import { Wallet } from "ethers";
+import type { TransactionSigner } from "@solana/signers";
+import type { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
+import type { Wallet } from "ethers";
 
-export type PrivateKeyProvider = IBaseProvider<string> & { getEd25519Key?: (privKey: string) => string };
+export type PrivateKeyProvider = IBaseProvider<string>;
 
-export interface TorusSubConnectionInfo {
-  verifier: string;
-  idToken: string;
-}
-export type InitParams = { provider: PrivateKeyProvider };
+// Discriminated union for wallet results
+export type WalletResult =
+  | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: TransactionSigner }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: Wallet }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider };
 
 export type LoginParams = {
   userId: string;
@@ -23,14 +23,8 @@ export interface IWeb3Auth {
   currentChain: CustomChainConfig;
   connected: boolean;
   init(): Promise<void>;
-  connect(loginParams: LoginParams): Promise<Wallet | TransactionSigner | null>;
+  connect(loginParams: LoginParams): Promise<WalletResult>;
 }
-
-export type AggregateVerifierParams = {
-  verify_params: { verifier_id: string; idtoken: string }[];
-  sub_verifier_ids: string[];
-  verifier_id: string;
-};
 
 export interface Web3AuthOptions {
   /**
