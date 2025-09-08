@@ -249,26 +249,25 @@ export class Web3Auth implements IWeb3Auth {
   }
 
   private async getWallet(privateKey: string): Promise<WalletResult> {
+    const provider = new CommonPrivateKeyProvider({
+      config: {
+        keyExportEnabled: this.projectConfig.enableKeyExport,
+        chain: this.currentChain,
+        chains: this.options.chains,
+      },
+    });
+    await provider.setupProvider(privateKey);
     if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
       const ed25519Key = getED25519Key(privateKey).sk;
       const keyPair = await createKeyPairFromBytes(new Uint8Array(ed25519Key));
       const signer = await createSignerFromKeyPair(keyPair);
-      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider: signer };
+      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider, signer: signer };
     } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
       const ethersWallet = new Wallet(privateKey);
-      const provider = new JsonRpcProvider(this.currentChain.rpcTarget);
-      const signer = ethersWallet.connect(provider);
-      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider: signer };
+      const signer = ethersWallet.connect(new JsonRpcProvider(this.currentChain.rpcTarget));
+      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer: signer };
     } else {
-      const provider = new CommonPrivateKeyProvider({
-        config: {
-          keyExportEnabled: this.projectConfig.enableKeyExport,
-          chain: this.currentChain,
-          chains: this.options.chains,
-        },
-      });
-      await provider.setupProvider(privateKey);
-      return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider };
+      return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider, signer: null };
     }
   }
 

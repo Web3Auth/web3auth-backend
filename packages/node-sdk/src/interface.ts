@@ -6,9 +6,9 @@ export type PrivateKeyProvider = IBaseProvider<string>;
 
 // Discriminated union for wallet results
 export type WalletResult =
-  | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: TransactionSigner }
-  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: Wallet }
-  | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider };
+  | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: PrivateKeyProvider; signer: TransactionSigner }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: Wallet }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider; signer: null };
 
 export type LoginParams = {
   userId: string;

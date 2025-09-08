@@ -3,7 +3,9 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs");
 
 const web3auth = new Web3Auth({
-  defaultChainId: "aptos-devnet",
+  // defaultChainId: "aptos-devnet",
+  // defaultChainId: "0x66"
+  defaultChainId: "0x1",
   clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
   web3AuthNetwork: "sapphire_mainnet", // Get your Network from Web3Auth Dashboard
 });
