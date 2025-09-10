@@ -1,116 +1,178 @@
-/* eslint-disable security/detect-object-injection */
+import { createKeyPairFromBytes } from "@solana/keys";
+import { createSignerFromKeyPair } from "@solana/signers";
 import { LEGACY_NETWORKS_ROUTE_MAP, TORUS_LEGACY_NETWORK_TYPE, TORUS_SAPPHIRE_NETWORK_TYPE } from "@toruslabs/constants";
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
-import { keccak256, Torus } from "@toruslabs/torus.js";
-import { subkey } from "@web3auth/auth";
-import { CHAIN_NAMESPACES, ChainNamespaceType, IProvider, WalletInitializationError, WalletLoginError } from "@web3auth/base";
+import { keccak256, Torus, VerifierParams } from "@toruslabs/torus.js";
+import {
+  AUTH_CONNECTION,
+  Auth0UserInfo,
+  AuthConnectionConfigItem,
+  getED25519Key,
+  getUserId,
+  serializeError,
+  subkey,
+  WEB3AUTH_NETWORK,
+} from "@web3auth/auth";
+import {
+  ANALYTICS_EVENTS,
+  CHAIN_NAMESPACES,
+  type ChainNamespaceType,
+  CommonPrivateKeyProvider,
+  type CustomChainConfig,
+  fetchProjectConfig,
+  getCaipChainId,
+  getErrorAnalyticsProperties,
+  getHostname,
+  isHexStrict,
+  log,
+  type ProjectConfig,
+  WalletInitializationError,
+  WalletLoginError,
+} from "@web3auth/no-modal";
+import { JsonRpcProvider, Wallet } from "ethers";
 
-import { AggregateVerifierParams, IWeb3Auth, LoginParams, PrivateKeyProvider, Web3AuthOptions } from "./interface";
+import { SDK_TYPE, SDK_VERSION, SegmentAnalytics } from "./analytics";
+import { IWeb3Auth, LoginParams, WalletResult, Web3AuthOptions } from "./interface";
+import { parseToken } from "./utils";
 
 export class Web3Auth implements IWeb3Auth {
-  public connected: boolean = false;
-
   readonly options: Web3AuthOptions;
 
   private torusUtils: Torus | null = null;
 
   private nodeDetailManager: NodeDetailManager | null = null;
 
-  private privKeyProvider: PrivateKeyProvider | null = null;
+  private analytics: SegmentAnalytics | null = null;
 
-  private currentChainNamespace: ChainNamespaceType = CHAIN_NAMESPACES.EIP155;
+  private projectConfig: ProjectConfig | null = null;
 
   constructor(options: Web3AuthOptions) {
     this.validateConstructorOptions(options);
-    const network = options.web3AuthNetwork || "mainnet";
+    const network = options.web3AuthNetwork || WEB3AUTH_NETWORK.SAPPHIRE_MAINNET;
     this.options = {
       ...options,
       web3AuthNetwork: network,
       useDKG: options.useDKG !== undefined ? options.useDKG : this.getUseDKGDefaultValue(network),
+      checkCommitment: typeof options.checkCommitment === "boolean" ? options.checkCommitment : true,
     };
+    this.analytics = new SegmentAnalytics();
   }
 
-  get provider(): IProvider | null {
-    return this.privKeyProvider || null;
+  get currentChainId(): string {
+    return this.options.defaultChainId || this.options.chains[0].chainId;
   }
 
-  init({ provider }: { provider: PrivateKeyProvider }): void {
-    if (!provider || !provider.currentChainConfig || !provider.currentChainConfig.chainNamespace) {
-      throw WalletInitializationError.invalidParams('provider must be of type "PrivateKeyProvider" and have a valid chainNamespace');
+  get currentChainNamespace(): ChainNamespaceType {
+    return this.options.chains?.find((chain) => chain.chainId === this.currentChainId)?.chainNamespace || CHAIN_NAMESPACES.EIP155;
+  }
+
+  get currentChain(): CustomChainConfig {
+    return this.options.chains?.find((chain) => chain.chainId === this.currentChainId) || this.options.chains[0];
+  }
+
+  async init(): Promise<void> {
+    const { web3AuthNetwork: network, clientId } = this.options;
+
+    const startTime = Date.now();
+    this.analytics.init();
+    this.analytics.identify(this.options.clientId, {
+      web3auth_client_id: this.options.clientId,
+      web3auth_network: this.options.web3AuthNetwork,
+    });
+    this.analytics.setGlobalProperties({
+      sdk_name: SDK_TYPE,
+      sdk_version: SDK_VERSION,
+      // Required for organization analytics
+      web3auth_client_id: this.options.clientId,
+      web3auth_network: this.options.web3AuthNetwork,
+    });
+
+    // get project config
+    let projectConfig: ProjectConfig;
+    try {
+      projectConfig = await fetchProjectConfig({
+        clientId,
+        web3AuthNetwork: network,
+      });
+    } catch (e) {
+      const error = await serializeError(e);
+      log.error("Failed to fetch project configurations", error);
+      throw WalletInitializationError.notReady("failed to fetch project configurations", error);
     }
-    const { web3AuthNetwork: network } = this.options;
+
+    this.projectConfig = projectConfig;
+    this.initChainsConfig();
+    this.analytics.setGlobalProperties({ team_id: projectConfig.teamId });
+
     this.torusUtils = new Torus({
       enableOneKey: true,
       network,
-      clientId: this.options.clientId,
+      clientId,
     });
+
     Torus.enableLogging(this.options.enableLogging || false);
 
     this.nodeDetailManager = new NodeDetailManager({ network, enableLogging: this.options.enableLogging || false });
-    this.privKeyProvider = provider;
-    this.currentChainNamespace = provider.currentChainConfig.chainNamespace;
+
+    this.analytics.track(ANALYTICS_EVENTS.SDK_INITIALIZATION_COMPLETED, {
+      ...this.getInitializationTrackData(),
+      duration: Date.now() - startTime,
+    });
   }
 
-  async connect(loginParams: LoginParams): Promise<IProvider | null> {
-    if (!this.torusUtils || !this.nodeDetailManager || !this.privKeyProvider) throw WalletInitializationError.notReady("Please call init first.");
-    const { verifier, verifierId, idToken, subVerifierInfoArray } = loginParams;
-    if (!verifier || !verifierId || !idToken) throw WalletInitializationError.invalidParams("verifier or verifierId or idToken  required");
-    const verifierDetails = { verifier, verifierId };
+  async connect(loginParams: LoginParams): Promise<WalletResult> {
+    if (!this.torusUtils || !this.nodeDetailManager) throw WalletInitializationError.notReady("Please call init first.");
 
-    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails(verifierDetails);
+    if (!loginParams.idToken || !loginParams.authConnectionId) throw WalletLoginError.fromCode(5000, "idToken and authConnectionId are required");
 
-    let finalIdToken = idToken;
-    let finalVerifierParams = { verifier_id: verifierId };
-    if (subVerifierInfoArray && subVerifierInfoArray?.length > 0) {
-      const aggregateVerifierParams: AggregateVerifierParams = { verify_params: [], sub_verifier_ids: [], verifier_id: "" };
-      const aggregateIdTokenSeeds = [];
-      for (let index = 0; index < subVerifierInfoArray.length; index += 1) {
-        const userInfo = subVerifierInfoArray[index];
-        aggregateVerifierParams.verify_params.push({ verifier_id: verifierId, idtoken: userInfo.idToken });
-        aggregateVerifierParams.sub_verifier_ids.push(userInfo.verifier);
-        aggregateIdTokenSeeds.push(userInfo.idToken);
+    const startTime = Date.now();
+    const eventData = {
+      auth_connection: AUTH_CONNECTION.CUSTOM,
+      auth_connection_id: loginParams.authConnectionId,
+      group_auth_connection_id: loginParams.groupedAuthConnectionId,
+      is_default_auth_connection: false,
+      is_user_id_provided: Boolean(loginParams.userId),
+      is_user_id_case_sensitive: Boolean(loginParams.isUserIdCaseSensitive),
+    };
+
+    try {
+      // track connection started event
+      this.analytics.track(ANALYTICS_EVENTS.CONNECTION_STARTED, eventData);
+
+      // get torus key
+      const retrieveSharesResponse = await this.getTorusKey(loginParams);
+
+      if (retrieveSharesResponse.metadata.upgraded) {
+        throw WalletLoginError.mfaEnabled();
       }
-      aggregateIdTokenSeeds.sort();
 
-      const inputString = aggregateIdTokenSeeds.join(String.fromCharCode(29));
-      const inputBuffer = Buffer.from(inputString, "utf8");
-      finalIdToken = keccak256(inputBuffer).slice(2);
+      const { finalKeyData, oAuthKeyData } = retrieveSharesResponse;
+      const privKey = finalKeyData.privKey || oAuthKeyData.privKey;
+      if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
 
-      aggregateVerifierParams.verifier_id = verifierId;
-      finalVerifierParams = aggregateVerifierParams;
-    }
-    const retrieveSharesResponse = await this.torusUtils.retrieveShares({
-      endpoints: torusNodeEndpoints,
-      indexes: torusIndexes,
-      verifier,
-      verifierParams: finalVerifierParams,
-      idToken: finalIdToken,
-      nodePubkeys: torusNodePub,
-      useDkg: this.options.useDKG,
-    });
-    if (retrieveSharesResponse.metadata.upgraded) {
-      throw WalletLoginError.mfaEnabled();
-    }
-
-    const { finalKeyData, oAuthKeyData } = retrieveSharesResponse;
-    const privKey = finalKeyData.privKey || oAuthKeyData.privKey;
-    if (!privKey) throw WalletLoginError.fromCode(5000, "Unable to get private key from torus nodes");
-
-    let finalPrivKey = privKey.padStart(64, "0");
-    if (this.options.usePnPKey) {
-      const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
-      finalPrivKey = pnpPrivKey.padStart(64, "0");
-    }
-
-    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
-      if (!this.privKeyProvider.getEd25519Key) {
-        throw WalletLoginError.fromCode(5000, "Private key provider is not valid, Missing getEd25519Key function");
+      let finalPrivKey = privKey.padStart(64, "0");
+      if (this.options.usePnPKey) {
+        const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
+        finalPrivKey = pnpPrivKey.padStart(64, "0");
       }
-      finalPrivKey = this.privKeyProvider.getEd25519Key(finalPrivKey);
+
+      const wallet = await this.getWallet(finalPrivKey);
+      this.analytics.track(ANALYTICS_EVENTS.CONNECTION_COMPLETED, {
+        ...eventData,
+        ...this.getInitializationTrackData(),
+        duration: Date.now() - startTime,
+      });
+      return wallet;
+    } catch (err) {
+      const error = await serializeError(err);
+      this.analytics.track(ANALYTICS_EVENTS.CONNECTION_FAILED, {
+        ...eventData,
+        ...getErrorAnalyticsProperties(err),
+        duration: Date.now() - startTime,
+      });
+      log.error("Failed to connect", error);
+      throw error;
     }
-    await this.privKeyProvider.setupProvider(finalPrivKey);
-    this.connected = true;
-    return this.privKeyProvider;
   }
 
   private getUseDKGDefaultValue(network: TORUS_LEGACY_NETWORK_TYPE | TORUS_SAPPHIRE_NETWORK_TYPE): boolean {
@@ -126,6 +188,170 @@ export class Web3Auth implements IWeb3Auth {
     // non dkg flow is not supported in legacy networks
     if (options.useDKG === false && LEGACY_NETWORKS_ROUTE_MAP[options.web3AuthNetwork as TORUS_LEGACY_NETWORK_TYPE]) {
       throw WalletInitializationError.invalidParams("useDKG cannot be false for legacy networks");
+    }
+  }
+
+  private initChainsConfig() {
+    // merge chains from project config with core options, core options chains will take precedence over project config chains
+    const chainMap = new Map<string, CustomChainConfig>();
+    const allChains = [...(this.projectConfig.chains || []), ...(this.options.chains || [])];
+    for (const chain of allChains) {
+      const existingChain = chainMap.get(chain.chainId);
+      if (!existingChain) chainMap.set(chain.chainId, chain);
+      else chainMap.set(chain.chainId, { ...existingChain, ...chain });
+    }
+    this.options.chains = Array.from(chainMap.values());
+
+    // validate chains and namespaces
+    if (this.options.chains.length === 0) {
+      log.error("chain info not found. Please configure chains on dashboard at https://dashboard.web3auth.io");
+      throw WalletInitializationError.invalidParams("Please configure chains on dashboard at https://dashboard.web3auth.io");
+    }
+    const validChainNamespaces = new Set(Object.values(CHAIN_NAMESPACES));
+    for (const chain of this.options.chains) {
+      if (!chain.chainNamespace || !validChainNamespaces.has(chain.chainNamespace)) {
+        log.error(`Please provide a valid chainNamespace in chains for chain ${chain.chainId}`);
+        throw WalletInitializationError.invalidParams(`Please provide a valid chainNamespace in chains for chain ${chain.chainId}`);
+      }
+      if (chain.chainNamespace !== CHAIN_NAMESPACES.OTHER && !isHexStrict(chain.chainId)) {
+        log.error(`Please provide a valid chainId in chains for chain ${chain.chainId}`);
+        throw WalletInitializationError.invalidParams(`Please provide a valid chainId as hex string in chains for chain ${chain.chainId}`);
+      }
+      if (chain.chainNamespace !== CHAIN_NAMESPACES.OTHER) {
+        try {
+          new URL(chain.rpcTarget);
+        } catch (error) {
+          // TODO: add support for chain.wsTarget
+          log.error(`Please provide a valid rpcTarget in chains for chain ${chain.chainId}`, error);
+          throw WalletInitializationError.invalidParams(`Please provide a valid rpcTarget in chains for chain ${chain.chainId}`);
+        }
+      }
+    }
+  }
+
+  private async getTorusKey(params: LoginParams) {
+    const { authConnectionId, idToken, groupedAuthConnectionId } = params;
+    const verifier = groupedAuthConnectionId || authConnectionId;
+    if (!verifier) throw WalletLoginError.fromCode(5000, "authConnectionId is required");
+
+    const oAuthProviderConfig = this.getOAuthProviderConfig(params);
+
+    const userId = this.getUserId(oAuthProviderConfig, params);
+    if (!userId) throw WalletLoginError.fromCode(5000, "userId is required");
+    const verifierParams: VerifierParams = { verifier_id: userId };
+    let aggregateIdToken = "";
+    const finalIdToken = idToken;
+
+    if (groupedAuthConnectionId) {
+      verifierParams["verify_params"] = [{ verifier_id: userId, idtoken: finalIdToken }];
+      verifierParams["sub_verifier_ids"] = [authConnectionId];
+      aggregateIdToken = keccak256(Buffer.from(finalIdToken, "utf8")).slice(2);
+    }
+
+    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails({ verifier, verifierId: userId });
+
+    return this.torusUtils.retrieveShares({
+      endpoints: torusNodeEndpoints,
+      indexes: torusIndexes,
+      verifier,
+      verifierParams,
+      idToken: aggregateIdToken || finalIdToken,
+      nodePubkeys: torusNodePub,
+      useDkg: this.options.useDKG,
+      checkCommitment: this.options.checkCommitment,
+    });
+  }
+
+  private getOAuthProviderConfig(loginParams: LoginParams) {
+    const { authConnectionId, groupedAuthConnectionId } = loginParams;
+    const authConnection = AUTH_CONNECTION.CUSTOM;
+    const providerConfig = this.projectConfig.embeddedWalletAuth.find((x) => {
+      if (groupedAuthConnectionId && authConnectionId) {
+        return (
+          x.authConnection === authConnection && x.groupedAuthConnectionId === groupedAuthConnectionId && x.authConnectionId === authConnectionId
+        );
+      }
+      if (authConnectionId) {
+        return x.authConnection === authConnection && x.authConnectionId === authConnectionId;
+      }
+      // return the default auth connection, if not found, return undefined
+      return x.authConnection === authConnection && x.isDefault;
+    });
+
+    if (!providerConfig) {
+      return {
+        authConnection,
+        authConnectionId,
+        groupedAuthConnectionId,
+        jwtParameters: {
+          userIdField: "sub",
+          isUserIdCaseSensitive: true,
+        },
+      };
+    }
+
+    return providerConfig;
+  }
+
+  private getUserId(oAuthProviderConfig: AuthConnectionConfigItem, loginParams: LoginParams): string {
+    const { userId, idToken, isUserIdCaseSensitive, userIdField } = loginParams;
+    if (userId) return userId;
+    const { userIdField: oAuthProviderConfigUserIdField, isUserIdCaseSensitive: oAuthProviderConfigIsUserIdCaseSensitive } =
+      oAuthProviderConfig.jwtParameters;
+    if (idToken) {
+      const { payload } = parseToken<Auth0UserInfo>(idToken) || {};
+      if (!payload) throw WalletLoginError.fromCode(5000, "Invalid idToken");
+      return getUserId(
+        payload,
+        AUTH_CONNECTION.CUSTOM,
+        userIdField || oAuthProviderConfigUserIdField,
+        isUserIdCaseSensitive || oAuthProviderConfigIsUserIdCaseSensitive
+      );
+    }
+    throw WalletLoginError.fromCode(5000, "userId or idToken is required");
+  }
+
+  private async getWallet(privateKey: string): Promise<WalletResult> {
+    const provider = new CommonPrivateKeyProvider({
+      config: {
+        keyExportEnabled: this.projectConfig.enableKeyExport,
+        chain: this.currentChain,
+        chains: this.options.chains,
+      },
+    });
+    await provider.setupProvider(privateKey);
+    if (this.currentChainNamespace === CHAIN_NAMESPACES.SOLANA) {
+      const ed25519Key = getED25519Key(privateKey).sk;
+      const keyPair = await createKeyPairFromBytes(new Uint8Array(ed25519Key));
+      const signer = await createSignerFromKeyPair(keyPair);
+      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider, signer: signer };
+    } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
+      const ethersWallet = new Wallet(privateKey);
+      const signer = ethersWallet.connect(new JsonRpcProvider(this.currentChain.rpcTarget));
+      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer: signer };
+    } else {
+      return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider, signer: null };
+    }
+  }
+
+  private getInitializationTrackData() {
+    try {
+      const defaultChain = this.options.chains?.find((chain) => chain.chainId === this.options.defaultChainId);
+      const rpcHostnames = Array.from(new Set(this.options.chains?.map((chain) => getHostname(chain.rpcTarget)))).filter(Boolean);
+      return {
+        chain_ids: this.options.chains?.map((chain) => getCaipChainId(chain)),
+        chain_names: this.options.chains?.map((chain) => chain.displayName),
+        chain_rpc_targets: rpcHostnames,
+        default_chain_id: defaultChain ? getCaipChainId(defaultChain) : undefined,
+        default_chain_name: defaultChain?.displayName,
+        logging_enabled: this.options.enableLogging,
+        sfa_key_enabled: !this.options.usePnPKey,
+        use_dkg: this.options.useDKG,
+        check_commitment: this.options.checkCommitment,
+      };
+    } catch (error) {
+      log.error("Failed to get initialization track data", error);
+      return {};
     }
   }
 }

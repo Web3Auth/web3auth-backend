@@ -1,33 +1,31 @@
-import type { TORUS_NETWORK_TYPE } from "@toruslabs/constants";
-import type { IBaseProvider, SafeEventEmitterProvider } from "@web3auth/base";
+import type { TransactionSigner } from "@solana/signers";
+import type { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
+import type { Wallet } from "ethers";
 
-export type PrivateKeyProvider = IBaseProvider<string> & { getEd25519Key?: (privKey: string) => string };
+export type PrivateKeyProvider = IBaseProvider<string>;
 
-export interface TorusSubVerifierInfo {
-  verifier: string;
-  idToken: string;
-}
-export type InitParams = { provider: PrivateKeyProvider };
+// Discriminated union for wallet results
+export type WalletResult =
+  | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: PrivateKeyProvider; signer: TransactionSigner }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: Wallet }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider; signer: null };
 
 export type LoginParams = {
-  verifier: string;
-  verifierId: string;
   idToken: string;
-  subVerifierInfoArray?: TorusSubVerifierInfo[];
+  authConnectionId: string;
+  userId?: string;
+  userIdField?: string;
+  isUserIdCaseSensitive?: boolean;
+  groupedAuthConnectionId?: string;
 };
 
 export interface IWeb3Auth {
-  provider: SafeEventEmitterProvider | null;
-  connected: boolean;
-  init(params: InitParams): void;
-  connect(loginParams: LoginParams): Promise<SafeEventEmitterProvider | null>;
+  currentChainId: string;
+  currentChainNamespace: ChainNamespaceType;
+  currentChain: CustomChainConfig;
+  init(): Promise<void>;
+  connect(loginParams: LoginParams): Promise<WalletResult>;
 }
-
-export type AggregateVerifierParams = {
-  verify_params: { verifier_id: string; idtoken: string }[];
-  sub_verifier_ids: string[];
-  verifier_id: string;
-};
 
 export interface Web3AuthOptions {
   /**
@@ -41,7 +39,18 @@ export interface Web3AuthOptions {
    * Web3Auth Network to use for login
    * @defaultValue mainnet
    */
-  web3AuthNetwork?: TORUS_NETWORK_TYPE;
+  web3AuthNetwork?: WEB3AUTH_NETWORK_TYPE;
+
+  /**
+   * multiple chain configurations,
+   * only provided chains will be used
+   */
+  chains?: CustomChainConfig[];
+
+  /**
+   * default chain Id to use
+   */
+  defaultChainId?: string;
 
   /**
    * setting to true will enable logs
@@ -52,7 +61,7 @@ export interface Web3AuthOptions {
 
   /**
    * setting this to true returns the same key as web sdk (i.e., plug n play key)
-   * By default, this sdk returns CoreKitKey
+   * By default, this sdk returns SFAKey
    */
   usePnPKey?: boolean;
 
@@ -63,4 +72,11 @@ export interface Web3AuthOptions {
    * Legacy networks doesnt support non dkg flow. So this is always true for legacy networks.
    */
   useDKG?: boolean;
+
+  /**
+   * setting this to true will check the commitment of the shares
+   *
+   * @defaultValue true
+   */
+  checkCommitment?: boolean;
 }
