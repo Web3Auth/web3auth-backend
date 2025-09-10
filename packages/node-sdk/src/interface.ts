@@ -11,9 +11,11 @@ export type WalletResult =
   | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider; signer: null };
 
 export type LoginParams = {
-  userId: string;
   idToken: string;
   authConnectionId: string;
+  userId?: string;
+  userIdField?: string;
+  isUserIdCaseSensitive?: boolean;
   groupedAuthConnectionId?: string;
 };
 
@@ -21,7 +23,6 @@ export interface IWeb3Auth {
   currentChainId: string;
   currentChainNamespace: ChainNamespaceType;
   currentChain: CustomChainConfig;
-  connected: boolean;
   init(): Promise<void>;
   connect(loginParams: LoginParams): Promise<WalletResult>;
 }

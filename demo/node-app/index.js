@@ -30,21 +30,21 @@ const token = jwt.sign(
 
 const initWeb3Auth = async () => {
   await web3auth.init();
-  console.log("Web3Auth initialized", web3auth.projectConfig);
 };
 
 const connect = async () => {
   await initWeb3Auth();
   const result = await web3auth.connect({
     authConnectionId: "w3a-node-demo", // replace with your verifier name
-    userId: sub, // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
+    // userId: sub, // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
+    // userIdField: "sub",
     idToken: token, // replace with your newly created unused JWT Token.
   });
   if (result.chainNamespace === "eip155") {
-    const address = await result.provider.getAddress();
+    const address = await result.signer.getAddress();
     console.log("Address: ", address);
   } else if (result.chainNamespace === "solana") {
-    const publicKey = result.provider.address;
+    const publicKey = result.signer.address;
     console.log("Public Key: ", publicKey);
   } else {
     const privateKey = await result.provider.request({ method: "private_key" });

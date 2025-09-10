@@ -3,7 +3,16 @@ import { createSignerFromKeyPair } from "@solana/signers";
 import { LEGACY_NETWORKS_ROUTE_MAP, TORUS_LEGACY_NETWORK_TYPE, TORUS_SAPPHIRE_NETWORK_TYPE } from "@toruslabs/constants";
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
 import { keccak256, Torus, VerifierParams } from "@toruslabs/torus.js";
-import { AUTH_CONNECTION, getED25519Key, serializeError, subkey, WEB3AUTH_NETWORK } from "@web3auth/auth";
+import {
+  AUTH_CONNECTION,
+  Auth0UserInfo,
+  AuthConnectionConfigItem,
+  getED25519Key,
+  getUserId,
+  serializeError,
+  subkey,
+  WEB3AUTH_NETWORK,
+} from "@web3auth/auth";
 import {
   ANALYTICS_EVENTS,
   CHAIN_NAMESPACES,
@@ -24,10 +33,9 @@ import { JsonRpcProvider, Wallet } from "ethers";
 
 import { SDK_TYPE, SDK_VERSION, SegmentAnalytics } from "./analytics";
 import { IWeb3Auth, LoginParams, WalletResult, Web3AuthOptions } from "./interface";
+import { parseToken } from "./utils";
 
 export class Web3Auth implements IWeb3Auth {
-  public connected: boolean = false;
-
   readonly options: Web3AuthOptions;
 
   private torusUtils: Torus | null = null;
@@ -115,8 +123,7 @@ export class Web3Auth implements IWeb3Auth {
   async connect(loginParams: LoginParams): Promise<WalletResult> {
     if (!this.torusUtils || !this.nodeDetailManager) throw WalletInitializationError.notReady("Please call init first.");
 
-    if (!loginParams.idToken || !loginParams.userId || !loginParams.authConnectionId)
-      throw WalletLoginError.fromCode(5000, "idToken, userId, and authConnectionId are required");
+    if (!loginParams.idToken || !loginParams.authConnectionId) throw WalletLoginError.fromCode(5000, "idToken and authConnectionId are required");
 
     const startTime = Date.now();
     const eventData = {
@@ -124,6 +131,8 @@ export class Web3Auth implements IWeb3Auth {
       auth_connection_id: loginParams.authConnectionId,
       group_auth_connection_id: loginParams.groupedAuthConnectionId,
       is_default_auth_connection: false,
+      is_user_id_provided: Boolean(loginParams.userId),
+      is_user_id_case_sensitive: Boolean(loginParams.isUserIdCaseSensitive),
     };
 
     try {
@@ -221,9 +230,14 @@ export class Web3Auth implements IWeb3Auth {
   }
 
   private async getTorusKey(params: LoginParams) {
-    const { authConnectionId, userId, idToken, groupedAuthConnectionId } = params;
+    const { authConnectionId, idToken, groupedAuthConnectionId } = params;
     const verifier = groupedAuthConnectionId || authConnectionId;
-    const verifierId = userId;
+    if (!verifier) throw WalletLoginError.fromCode(5000, "authConnectionId is required");
+
+    const oAuthProviderConfig = this.getOAuthProviderConfig(params);
+
+    const userId = this.getUserId(oAuthProviderConfig, params);
+    if (!userId) throw WalletLoginError.fromCode(5000, "userId is required");
     const verifierParams: VerifierParams = { verifier_id: userId };
     let aggregateIdToken = "";
     const finalIdToken = idToken;
@@ -234,7 +248,7 @@ export class Web3Auth implements IWeb3Auth {
       aggregateIdToken = keccak256(Buffer.from(finalIdToken, "utf8")).slice(2);
     }
 
-    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails({ verifier, verifierId });
+    const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails({ verifier, verifierId: userId });
 
     return this.torusUtils.retrieveShares({
       endpoints: torusNodeEndpoints,
@@ -246,6 +260,55 @@ export class Web3Auth implements IWeb3Auth {
       useDkg: this.options.useDKG,
       checkCommitment: this.options.checkCommitment,
     });
+  }
+
+  private getOAuthProviderConfig(loginParams: LoginParams) {
+    const { authConnectionId, groupedAuthConnectionId } = loginParams;
+    const authConnection = AUTH_CONNECTION.CUSTOM;
+    const providerConfig = this.projectConfig.embeddedWalletAuth.find((x) => {
+      if (groupedAuthConnectionId && authConnectionId) {
+        return (
+          x.authConnection === authConnection && x.groupedAuthConnectionId === groupedAuthConnectionId && x.authConnectionId === authConnectionId
+        );
+      }
+      if (authConnectionId) {
+        return x.authConnection === authConnection && x.authConnectionId === authConnectionId;
+      }
+      // return the default auth connection, if not found, return undefined
+      return x.authConnection === authConnection && x.isDefault;
+    });
+
+    if (!providerConfig) {
+      return {
+        authConnection,
+        authConnectionId,
+        groupedAuthConnectionId,
+        jwtParameters: {
+          userIdField: "sub",
+          isUserIdCaseSensitive: true,
+        },
+      };
+    }
+
+    return providerConfig;
+  }
+
+  private getUserId(oAuthProviderConfig: AuthConnectionConfigItem, loginParams: LoginParams): string {
+    const { userId, idToken, isUserIdCaseSensitive, userIdField } = loginParams;
+    if (userId) return userId;
+    const { userIdField: oAuthProviderConfigUserIdField, isUserIdCaseSensitive: oAuthProviderConfigIsUserIdCaseSensitive } =
+      oAuthProviderConfig.jwtParameters;
+    if (idToken) {
+      const { payload } = parseToken<Auth0UserInfo>(idToken) || {};
+      if (!payload) throw WalletLoginError.fromCode(5000, "Invalid idToken");
+      return getUserId(
+        payload,
+        AUTH_CONNECTION.CUSTOM,
+        userIdField || oAuthProviderConfigUserIdField,
+        isUserIdCaseSensitive || oAuthProviderConfigIsUserIdCaseSensitive
+      );
+    }
+    throw WalletLoginError.fromCode(5000, "userId or idToken is required");
   }
 
   private async getWallet(privateKey: string): Promise<WalletResult> {
