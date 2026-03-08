@@ -8,4 +8,10 @@ export default [
       "n/no-unpublished-import": "off",
     },
   },
+  {
+    files: ["**/eslint.config.mjs", "**/test/**"],
+    rules: {
+      "import/no-extraneous-dependencies": "off",
+    },
+  },
 ];

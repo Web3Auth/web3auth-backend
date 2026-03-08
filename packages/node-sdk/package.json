@@ -5,11 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
-    "build": "rimraf dist/ && tsc",
+    "build": "torus-scripts build",
     "prepack": "npm run build",
     "test": "cross-env NODE_ENV=test vitest run",
     "pre-commit": "lint-staged --cwd .",
-    "lint": "eslint --fix 'src/**/*.ts'"
+    "lint": "torus-scripts lint src test"
   },
   "dependencies": {
     "@segment/analytics-node": "^2.3.0",
@@ -38,5 +38,11 @@
   "engines": {
     "node": ">=18.x",
     "npm": ">=9.x"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "dotenv": "^16.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "vitest": "^3.1.1"
   }
 }
