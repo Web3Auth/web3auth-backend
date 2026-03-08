@@ -6,7 +6,6 @@ export default [
     rules: {
       camelcase: 0,
       "n/no-unpublished-import": "off",
-      "mocha/no-setup-in-describe": "off",
     },
   },
 ];

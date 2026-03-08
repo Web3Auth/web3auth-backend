@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rimraf dist/ && tsc",
     "prepack": "npm run build",
-    "test": "cross-env NODE_ENV=test mocha --config ../../.mocharc.json test/**/*test.ts",
+    "test": "cross-env NODE_ENV=test vitest run",
     "pre-commit": "lint-staged --cwd .",
     "lint": "eslint --fix 'src/**/*.ts'"
   },
