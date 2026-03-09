@@ -26,6 +26,7 @@
   "devDependencies": {
     "@toruslabs/config": "^4.0.0",
     "@toruslabs/eslint-config-node": "^5.0.1",
+    "@toruslabs/torus-scripts": "^8.0.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25",
     "cross-env": "^10.1.0",
