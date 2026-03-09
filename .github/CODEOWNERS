@@ -19,8 +19,8 @@
 *                               @torusresearch/Admins
 
 # Product code
-src/                            @torusresearch/Web3Auth-Product
-test/                           @torusresearch/Web3Auth-Product
+**/src/                         @torusresearch/Web3Auth-Product
+**/test/                        @torusresearch/Web3Auth-Product
 
 # Most restrictive — last match wins
 .github/CODEOWNERS              @torusresearch/Admins

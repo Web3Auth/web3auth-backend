@@ -45,7 +45,7 @@ export interface Web3AuthOptions {
    * multiple chain configurations,
    * only provided chains will be used
    */
-  chains?: CustomChainConfig[];
+  chains: CustomChainConfig[];
 
   /**
    * default chain Id to use

@@ -1,6 +1,6 @@
 import { base64toJSON } from "@web3auth/auth";
 
-export function parseToken<T>(token: string): { header: { alg: string; typ: string; kid?: string }; payload: T } {
+export function parseToken<T>(token: string): { header: { alg: string; typ: string; kid?: string }; payload: T } | null {
   try {
     const [header, payload] = token.split(".");
     return {
