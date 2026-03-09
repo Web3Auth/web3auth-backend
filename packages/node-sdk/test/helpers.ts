@@ -12,7 +12,7 @@ export const generateIdToken = (email: string, alg: Algorithm) => {
     email,
     scope: "email",
     iat,
-    exp: iat + 120,
+    eat: iat + 120,
   };
 
   const algo = {
