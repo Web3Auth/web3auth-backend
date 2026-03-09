@@ -7,21 +7,21 @@
   "scripts": {
     "build": "torus-scripts build",
     "prepack": "npm run build",
-    "test": "cross-env NODE_ENV=test vitest run",
+    "test": "cross-env NODE_ENV=test vitest run --config test/vitest.config.mts",
     "pre-commit": "lint-staged --cwd .",
     "lint": "torus-scripts lint src test"
   },
   "dependencies": {
-    "@segment/analytics-node": "^2.3.0",
-    "@solana/keys": "^2.3.0",
-    "@solana/signers": "^2.3.0",
-    "@toruslabs/constants": "^15.0.0",
-    "@toruslabs/fetch-node-details": "^15.0.0",
-    "@toruslabs/http-helpers": "^8.1.1",
-    "@toruslabs/torus.js": "^16.0.0",
-    "@web3auth/auth": "^10.5.0",
-    "@web3auth/no-modal": "^10.2.0",
-    "ethers": "^6.15.0"
+    "@segment/analytics-node": "^3.0.0",
+    "@solana/keys": "^6.1.0",
+    "@solana/signers": "^6.1.0",
+    "@toruslabs/constants": "^16.0.0",
+    "@toruslabs/fetch-node-details": "^16.0.0",
+    "@toruslabs/http-helpers": "^9.0.0",
+    "@toruslabs/torus.js": "^17.1.1",
+    "@web3auth/auth": "^11.2.1",
+    "@web3auth/no-modal": "^10.15.0",
+    "viem": "^2.47.0"
   },
   "keywords": [],
   "author": "",
@@ -36,13 +36,16 @@
     ]
   },
   "engines": {
-    "node": ">=18.x",
-    "npm": ">=9.x"
+    "node": ">=22.x",
+    "npm": ">=10.x"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
-    "dotenv": "^16.6.1",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.3.1",
+    "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.3",
-    "vitest": "^3.1.1"
+    "ox": "^0.14.0",
+    "vitest": "^4.0.18"
   }
 }

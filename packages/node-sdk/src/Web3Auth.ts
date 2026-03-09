@@ -29,7 +29,8 @@ import {
   WalletInitializationError,
   WalletLoginError,
 } from "@web3auth/no-modal";
-import { JsonRpcProvider, Wallet } from "ethers";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { SDK_TYPE, SDK_VERSION, SegmentAnalytics } from "./analytics";
 import { IWeb3Auth, LoginParams, WalletResult, Web3AuthOptions } from "./interface";
@@ -152,7 +153,10 @@ export class Web3Auth implements IWeb3Auth {
 
       let finalPrivKey = privKey.padStart(64, "0");
       if (this.options.usePnPKey) {
-        const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
+        const pnpPrivKey = subkey(
+          finalPrivKey,
+          Uint8Array.from(atob(this.options.clientId), (c) => c.charCodeAt(0))
+        );
         finalPrivKey = pnpPrivKey.padStart(64, "0");
       }
 
@@ -245,7 +249,7 @@ export class Web3Auth implements IWeb3Auth {
     if (groupedAuthConnectionId) {
       verifierParams["verify_params"] = [{ verifier_id: userId, idtoken: finalIdToken }];
       verifierParams["sub_verifier_ids"] = [authConnectionId];
-      aggregateIdToken = keccak256(Buffer.from(finalIdToken, "utf8")).slice(2);
+      aggregateIdToken = keccak256(new TextEncoder().encode(finalIdToken)).slice(2);
     }
 
     const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails({ verifier, verifierId: userId });
@@ -326,9 +330,9 @@ export class Web3Auth implements IWeb3Auth {
       const signer = await createSignerFromKeyPair(keyPair);
       return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider, signer: signer };
     } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
-      const ethersWallet = new Wallet(privateKey);
-      const signer = ethersWallet.connect(new JsonRpcProvider(this.currentChain.rpcTarget));
-      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer: signer };
+      const account = privateKeyToAccount(`0x${privateKey}`);
+      const signer = createWalletClient({ account, transport: http(this.currentChain.rpcTarget) });
+      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer };
     } else {
       return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider, signer: null };
     }

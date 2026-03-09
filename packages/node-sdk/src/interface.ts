@@ -1,13 +1,13 @@
 import type { TransactionSigner } from "@solana/signers";
 import type { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
-import type { Wallet } from "ethers";
+import type { WalletClient } from "viem";
 
 export type PrivateKeyProvider = IBaseProvider<string>;
 
 // Discriminated union for wallet results
 export type WalletResult =
   | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: PrivateKeyProvider; signer: TransactionSigner }
-  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: Wallet }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: WalletClient }
   | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider; signer: null };
 
 export type LoginParams = {
