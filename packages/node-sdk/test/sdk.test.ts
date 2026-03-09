@@ -158,7 +158,7 @@ describe("web3auth backend - error cases", function () {
       tickerName: "Other",
       logo: "",
       chainId: "other-chain",
-      rpcTarget: "",
+      rpcTarget: "https://example.com/rpc",
     };
     const web3auth = new Web3Auth({
       clientId: CLIENT_ID,
