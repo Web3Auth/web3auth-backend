@@ -13,14 +13,14 @@
 # admins and maintainers to restrict approval capabilities to a subset
 # of contributors. Modifications to this file result in a modification of
 # that agreement and can only be approved by those with the knowledge
-# and responsibility to publish libraries under the MetaMask name.
+# and responsibility to publish libraries under the Web3auth name.
 
 # Fallback for all other files
-*                               @torusresearch/Admins
+*                               @Web3auth/Web3Auth-Admins
 
 # Product code
-**/src/                         @torusresearch/Web3Auth-Product
-**/test/                        @torusresearch/Web3Auth-Product
+src/                            @Web3auth/Web3Auth-Product
+test/                           @Web3auth/Web3Auth-Product
 
 # Most restrictive — last match wins
-.github/CODEOWNERS              @torusresearch/Admins
+.github/CODEOWNERS              @Web3auth/Web3Auth-Admins
