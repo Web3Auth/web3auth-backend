@@ -1,6 +1,6 @@
 {
   "name": "@web3auth/node-sdk",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Node SDK for Web3Auth",
   "main": "dist/lib.cjs/index.js",
   "module": "dist/lib.esm/index.js",
