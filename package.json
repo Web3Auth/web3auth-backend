@@ -24,6 +24,7 @@
     "url": "git+https://github.com/Web3Auth/web3auth-backend.git"
   },
   "devDependencies": {
+    "@rollup/plugin-replace": "^6.0.3",
     "@toruslabs/config": "^4.0.1",
     "@toruslabs/eslint-config-node": "^5.0.2",
     "@toruslabs/torus-scripts": "^8.1.0",

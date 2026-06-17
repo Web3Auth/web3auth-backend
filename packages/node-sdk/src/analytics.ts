@@ -1,14 +1,15 @@
 import { Analytics as AnalyticsNode, type UserTraits } from "@segment/analytics-node";
 import { log } from "@web3auth/no-modal";
-// Import package.json for version info
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const packageJson = require("../package.json");
+
+// Replaced at build time with the package version (see rollup.config.js) and at test/dev time
+// via the vitest `define` config, so we don't need to read package.json at runtime.
+declare const __WEB3AUTH_SDK_VERSION__: string;
 
 const SEGMENT_WRITE_KEY = "f6LbNqCeVRf512ggdME4b6CyflhF1tsX";
 
 export const SDK_TYPE = "node";
 
-export const SDK_VERSION = packageJson.version;
+export const SDK_VERSION = __WEB3AUTH_SDK_VERSION__;
 
 export class SegmentAnalytics {
   private segment: AnalyticsNode;

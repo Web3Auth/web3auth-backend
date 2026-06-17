@@ -67,7 +67,7 @@ export class Web3Auth implements IWeb3Auth {
   }
 
   get currentChainId(): string {
-    return this.options.defaultChainId || this.options.chains[0].chainId;
+    return this.options.defaultChainId || this.options.chains?.[0]?.chainId || "0x1";
   }
 
   get currentChainNamespace(): ChainNamespaceType {
@@ -75,7 +75,7 @@ export class Web3Auth implements IWeb3Auth {
   }
 
   get currentChain(): CustomChainConfig {
-    return this.options.chains?.find((chain) => chain.chainId === this.currentChainId) || this.options.chains[0];
+    return this.options.chains?.find((chain) => chain.chainId === this.currentChainId) || this.options.chains?.[0];
   }
 
   async init(): Promise<void> {

@@ -1,13 +1,14 @@
-const { Web3Auth } = require("@web3auth/node-sdk");
-const jwt = require("jsonwebtoken");
-const fs = require("fs");
+/* eslint-disable n/no-process-exit */
+/* eslint-disable no-console */
+import fs from "node:fs";
+
+import { Web3Auth } from "@web3auth/node-sdk";
+import jwt from "jsonwebtoken";
 
 const web3auth = new Web3Auth({
-  // defaultChainId: "aptos-devnet",
-  // defaultChainId: "0x66"
-  defaultChainId: "0x1",
   clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
   web3AuthNetwork: "sapphire_mainnet", // Get your Network from Web3Auth Dashboard
+  defaultChainId: "0x1",
 });
 
 const privateKey = fs.readFileSync("privateKey.pem");
@@ -16,7 +17,7 @@ const sub = Math.random().toString(36).substring(7);
 
 const token = jwt.sign(
   {
-    sub: sub,
+    sub,
     name: "Mohammad Yashovardhan Mishra Jang",
     email: "devrel@web3auth.io",
     aud: "urn:api-web3auth-io",
@@ -28,28 +29,29 @@ const token = jwt.sign(
   { algorithm: "RS256", keyid: "2ma4enu1kdvw5bo9xsfpi3gcjzrt6q78yl0h" }
 );
 
-const initWeb3Auth = async () => {
-  await web3auth.init();
-};
-
 const connect = async () => {
-  await initWeb3Auth();
+  await web3auth.init();
+
   const result = await web3auth.connect({
-    authConnectionId: "w3a-node-demo", // replace with your verifier name
-    // userId: sub, // replace with your verifier id's value, for example, sub value of JWT Token, or email address.
+    authConnectionId: "w3a-node-demo", // replace with your auth connection id from the Web3Auth Dashboard
+    // userId: sub, // optional: explicit user id, otherwise resolved from the idToken
     // userIdField: "sub",
     idToken: token, // replace with your newly created unused JWT Token.
   });
+
   if (result.chainNamespace === "eip155") {
-    const address = await result.signer.getAddress();
+    // result.signer is a viem WalletClient
+    const address = result.signer.account?.address;
     console.log("Address: ", address);
   } else if (result.chainNamespace === "solana") {
+    // result.signer is a @solana/signers TransactionSigner
     const publicKey = result.signer.address;
     console.log("Public Key: ", publicKey);
   } else {
-    const privateKey = await result.provider.request({ method: "private_key" });
-    console.log("Private Key: ", privateKey);
+    const privKey = await result.provider.request({ method: "private_key" });
+    console.log("Private Key: ", privKey);
   }
+
   process.exit(0);
 };
 
