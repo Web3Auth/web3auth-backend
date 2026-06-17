@@ -1,15 +1,15 @@
 {
   "author": "",
   "dependencies": {
-    "@web3auth/ethereum-provider": "^9.0.0",
-    "@web3auth/node-sdk": "../..",
-    "jsonwebtoken": "^9.0.2"
+    "@web3auth/node-sdk": "../../packages/node-sdk",
+    "jsonwebtoken": "^9.0.3"
   },
   "description": "Web3Auth's Node SDK Demo App",
   "keywords": [],
   "license": "ISC",
   "main": "index.js",
   "name": "node-app",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },

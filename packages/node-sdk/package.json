@@ -1,9 +1,10 @@
 {
   "name": "@web3auth/node-sdk",
   "version": "5.0.0",
-  "description": "",
-  "main": "dist/index.js",
-  "types": "dist/types/index.d.ts",
+  "description": "Node SDK for Web3Auth",
+  "main": "dist/lib.cjs/index.js",
+  "module": "dist/lib.esm/index.js",
+  "types": "dist/lib.cjs/types/index.d.ts",
   "scripts": {
     "build": "torus-scripts build",
     "prepack": "npm run build",
@@ -25,8 +26,17 @@
     "@web3auth/no-modal": "^11.2.0",
     "viem": "^2.52.2"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "web3auth",
+    "node",
+    "sdk",
+    "authentication",
+    "web3",
+    "blockchain",
+    "wallet",
+    "crypto"
+  ],
+  "author": "Web3Auth",
   "license": "ISC",
   "publishConfig": {
     "access": "public"
@@ -42,6 +52,7 @@
     "npm": ">=10.x"
   },
   "devDependencies": {
+    "@rollup/plugin-replace": "^6.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
