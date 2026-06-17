@@ -6,7 +6,12 @@ export default [
     rules: {
       camelcase: 0,
       "n/no-unpublished-import": "off",
-      "mocha/no-setup-in-describe": "off",
+    },
+  },
+  {
+    files: ["**/eslint.config.mjs", "**/test/**"],
+    rules: {
+      "import/no-extraneous-dependencies": "off",
     },
   },
 ];

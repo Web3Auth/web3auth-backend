@@ -5,23 +5,25 @@
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
-    "build": "rimraf dist/ && tsc",
+    "build": "torus-scripts build",
     "prepack": "npm run build",
-    "test": "cross-env NODE_ENV=test mocha --config ../../.mocharc.json test/**/*test.ts",
+    "test": "cross-env NODE_ENV=test vitest run --config test/vitest.config.mts",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "pre-commit": "lint-staged --cwd .",
-    "lint": "eslint --fix 'src/**/*.ts'"
+    "lint": "torus-scripts lint src test"
   },
   "dependencies": {
-    "@segment/analytics-node": "^2.3.0",
-    "@solana/keys": "^2.3.0",
-    "@solana/signers": "^2.3.0",
-    "@toruslabs/constants": "^15.0.0",
-    "@toruslabs/fetch-node-details": "^15.0.0",
-    "@toruslabs/http-helpers": "^8.1.1",
-    "@toruslabs/torus.js": "^16.0.0",
-    "@web3auth/auth": "^10.5.0",
-    "@web3auth/no-modal": "^10.2.0",
-    "ethers": "^6.15.0"
+    "@segment/analytics-node": "^3.1.0",
+    "@solana/keys": "^6.10.0",
+    "@solana/signers": "^6.10.0",
+    "@toruslabs/constants": "^16.1.1",
+    "@toruslabs/fetch-node-details": "^16.1.1",
+    "@toruslabs/http-helpers": "^9.0.0",
+    "@toruslabs/metadata-helpers": "^8.2.0",
+    "@toruslabs/torus.js": "^17.2.3",
+    "@web3auth/auth": "^11.8.1",
+    "@web3auth/no-modal": "^11.2.0",
+    "viem": "^2.52.2"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +38,15 @@
     ]
   },
   "engines": {
-    "node": ">=18.x",
-    "npm": ">=9.x"
+    "node": ">=22.x",
+    "npm": ">=10.x"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "husky": "^9.1.7",
+    "jsonwebtoken": "^9.0.3",
+    "vitest": "^4.1.9"
   }
 }

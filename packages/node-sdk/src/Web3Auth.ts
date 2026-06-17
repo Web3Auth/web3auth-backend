@@ -2,11 +2,13 @@ import { createKeyPairFromBytes } from "@solana/keys";
 import { createSignerFromKeyPair } from "@solana/signers";
 import { LEGACY_NETWORKS_ROUTE_MAP, TORUS_LEGACY_NETWORK_TYPE, TORUS_SAPPHIRE_NETWORK_TYPE } from "@toruslabs/constants";
 import { NodeDetailManager } from "@toruslabs/fetch-node-details";
-import { keccak256, Torus, VerifierParams } from "@toruslabs/torus.js";
+import { base64ToBytes, keccak256 } from "@toruslabs/metadata-helpers";
+import { Torus, VerifierParams } from "@toruslabs/torus.js";
 import {
   AUTH_CONNECTION,
   Auth0UserInfo,
   AuthConnectionConfigItem,
+  BUILD_ENV,
   getED25519Key,
   getUserId,
   serializeError,
@@ -29,33 +31,39 @@ import {
   WalletInitializationError,
   WalletLoginError,
 } from "@web3auth/no-modal";
-import { JsonRpcProvider, Wallet } from "ethers";
+import { createWalletClient, defineChain, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { SDK_TYPE, SDK_VERSION, SegmentAnalytics } from "./analytics";
 import { IWeb3Auth, LoginParams, WalletResult, Web3AuthOptions } from "./interface";
 import { parseToken } from "./utils";
 
 export class Web3Auth implements IWeb3Auth {
-  readonly options: Web3AuthOptions;
+  private readonly _options: Web3AuthOptions;
 
   private torusUtils: Torus | null = null;
 
   private nodeDetailManager: NodeDetailManager | null = null;
 
-  private analytics: SegmentAnalytics | null = null;
+  private analytics: SegmentAnalytics;
 
   private projectConfig: ProjectConfig | null = null;
 
   constructor(options: Web3AuthOptions) {
     this.validateConstructorOptions(options);
     const network = options.web3AuthNetwork || WEB3AUTH_NETWORK.SAPPHIRE_MAINNET;
-    this.options = {
+    this._options = {
       ...options,
       web3AuthNetwork: network,
+      authBuildEnv: options.authBuildEnv || BUILD_ENV.PRODUCTION,
       useDKG: options.useDKG !== undefined ? options.useDKG : this.getUseDKGDefaultValue(network),
       checkCommitment: typeof options.checkCommitment === "boolean" ? options.checkCommitment : true,
     };
     this.analytics = new SegmentAnalytics();
+  }
+
+  get options(): Readonly<Web3AuthOptions> {
+    return this._options;
   }
 
   get currentChainId(): string {
@@ -93,6 +101,7 @@ export class Web3Auth implements IWeb3Auth {
       projectConfig = await fetchProjectConfig({
         clientId,
         web3AuthNetwork: network,
+        authBuildEnv: this.options.authBuildEnv,
       });
     } catch (e) {
       const error = await serializeError(e);
@@ -152,7 +161,7 @@ export class Web3Auth implements IWeb3Auth {
 
       let finalPrivKey = privKey.padStart(64, "0");
       if (this.options.usePnPKey) {
-        const pnpPrivKey = subkey(finalPrivKey, Buffer.from(this.options.clientId, "base64"));
+        const pnpPrivKey = subkey(finalPrivKey, base64ToBytes(this.options.clientId));
         finalPrivKey = pnpPrivKey.padStart(64, "0");
       }
 
@@ -194,21 +203,21 @@ export class Web3Auth implements IWeb3Auth {
   private initChainsConfig() {
     // merge chains from project config with core options, core options chains will take precedence over project config chains
     const chainMap = new Map<string, CustomChainConfig>();
-    const allChains = [...(this.projectConfig.chains || []), ...(this.options.chains || [])];
+    const allChains = [...(this.projectConfig.chains || []), ...(this._options.chains || [])];
     for (const chain of allChains) {
       const existingChain = chainMap.get(chain.chainId);
       if (!existingChain) chainMap.set(chain.chainId, chain);
       else chainMap.set(chain.chainId, { ...existingChain, ...chain });
     }
-    this.options.chains = Array.from(chainMap.values());
+    this._options.chains = Array.from(chainMap.values());
 
     // validate chains and namespaces
-    if (this.options.chains.length === 0) {
+    if (this._options.chains.length === 0) {
       log.error("chain info not found. Please configure chains on dashboard at https://dashboard.web3auth.io");
       throw WalletInitializationError.invalidParams("Please configure chains on dashboard at https://dashboard.web3auth.io");
     }
     const validChainNamespaces = new Set(Object.values(CHAIN_NAMESPACES));
-    for (const chain of this.options.chains) {
+    for (const chain of this._options.chains) {
       if (!chain.chainNamespace || !validChainNamespaces.has(chain.chainNamespace)) {
         log.error(`Please provide a valid chainNamespace in chains for chain ${chain.chainId}`);
         throw WalletInitializationError.invalidParams(`Please provide a valid chainNamespace in chains for chain ${chain.chainId}`);
@@ -245,7 +254,7 @@ export class Web3Auth implements IWeb3Auth {
     if (groupedAuthConnectionId) {
       verifierParams["verify_params"] = [{ verifier_id: userId, idtoken: finalIdToken }];
       verifierParams["sub_verifier_ids"] = [authConnectionId];
-      aggregateIdToken = keccak256(Buffer.from(finalIdToken, "utf8")).slice(2);
+      aggregateIdToken = keccak256(new TextEncoder().encode(finalIdToken), { prefixed: false });
     }
 
     const { torusNodeEndpoints, torusIndexes, torusNodePub } = await this.nodeDetailManager.getNodeDetails({ verifier, verifierId: userId });
@@ -324,11 +333,19 @@ export class Web3Auth implements IWeb3Auth {
       const ed25519Key = getED25519Key(privateKey).sk;
       const keyPair = await createKeyPairFromBytes(new Uint8Array(ed25519Key));
       const signer = await createSignerFromKeyPair(keyPair);
-      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider, signer: signer };
+      return { chainNamespace: CHAIN_NAMESPACES.SOLANA, provider, signer };
     } else if (this.currentChainNamespace === CHAIN_NAMESPACES.EIP155) {
-      const ethersWallet = new Wallet(privateKey);
-      const signer = ethersWallet.connect(new JsonRpcProvider(this.currentChain.rpcTarget));
-      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer: signer };
+      const chainConfig = this.currentChain;
+      const chain = defineChain({
+        id: Number(chainConfig.chainId),
+        name: chainConfig.displayName || "Unknown",
+        nativeCurrency: { name: chainConfig.tickerName || "ETH", symbol: chainConfig.ticker || "ETH", decimals: chainConfig.decimals || 18 },
+        rpcUrls: { default: { http: [chainConfig.rpcTarget] } },
+        blockExplorers: chainConfig.blockExplorerUrl ? { default: { name: "Explorer", url: chainConfig.blockExplorerUrl } } : undefined,
+      });
+      const account = privateKeyToAccount(`0x${privateKey}`);
+      const signer = createWalletClient({ account, chain, transport: http(chainConfig.rpcTarget) });
+      return { chainNamespace: CHAIN_NAMESPACES.EIP155, provider, signer };
     } else {
       return { chainNamespace: CHAIN_NAMESPACES.OTHER, provider, signer: null };
     }
@@ -345,6 +362,7 @@ export class Web3Auth implements IWeb3Auth {
         default_chain_id: defaultChain ? getCaipChainId(defaultChain) : undefined,
         default_chain_name: defaultChain?.displayName,
         logging_enabled: this.options.enableLogging,
+        auth_build_env: this.options.authBuildEnv,
         sfa_key_enabled: !this.options.usePnPKey,
         use_dkg: this.options.useDKG,
         check_commitment: this.options.checkCommitment,

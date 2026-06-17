@@ -23,19 +23,9 @@ Checkout the official [Web3Auth Documentation](https://web3auth.io/docs) and [SD
 
 ...and a lot more
 
-## 💭 Choosing Between SDKs
-
-For using Web3Auth in the web, you have two choices of SDKs to get started with.
-
-[Web3Auth Plug and Play UI SDK `@web3auth/modal`](https://web3auth.io/docs/sdk/web/web3auth/): A simple and easy to use SDK that will give you a simple modular way of implementing Web3Auth directly within your application. You can use the pre-configured Web3Auth Modal UI and whitelabel it according to your needs.
-
-[Web3Auth Plug and Play Core SDK `@web3auth/core`](https://web3auth.io/docs/sdk/web/core/): The core module implemeting all the Web3Auth features you need and giving you the flexibilty of using your own UI with the Web3Auth SDK working in the backend.
-
-[Web3Auth Backend SDK `@web3auth/node-sdk`](https://web3auth.io/docs/sdk/web-backend/): A simple and easy to use SDK to be used in your Node.js backend to get the same experience of Web3Auth frontend SDKs
-
 ## ⚡ Quick Start
 
-### Installation (Web3Auth Backend)
+### Installation
 
 ```shell
 npm install --save @web3auth/node-sdk
@@ -47,51 +37,112 @@ Hop on to the [Web3Auth Dashboard](https://dashboard.web3auth.io/) and create a 
 
 ![Web3Auth Dashboard](https://web3auth.io/docs/assets/images/project_plug_n_play-89c39ec42ad993107bb2485b1ce64b89.png)
 
-### Initialize Web3Auth for your preferred blockchain
-
-Web3Auth needs to initialise as soon as your app loads up to enable the user to log in. Preferably done within a constructor, initialisation is the step where you can pass on all the configurations for Web3Auth you want. A simple integration for Ethereum blockchain will look like this:
+### Initialize Web3Auth
 
 ```js
 import { Web3Auth } from "@web3auth/node-sdk";
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+import { CHAIN_NAMESPACES } from "@web3auth/no-modal";
 
-//Initialize within your constructor
 const web3auth = new Web3Auth({
   clientId: "", // Get your Client ID from Web3Auth Dashboard
-  web3AuthNetwork: "mainnet",
-  usePnPKey: false, // Setting this to true returns the same key as PnP Web SDK. 
-  // By default, this SDK returns CoreKitKey.
+  web3AuthNetwork: "sapphire_mainnet",
+  chains: [
+    {
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      displayName: "ETH Mainnet",
+      blockExplorerUrl: "https://etherscan.io",
+      ticker: "ETH",
+      tickerName: "Ethereum",
+      chainId: "0x1",
+      rpcTarget: "https://rpc.ankr.com/eth",
+    },
+  ],
 });
 
-const chainConfig: {
-  displayName: "ETH Mainnet",
-  blockExplorer: "https://etherscan.io",
-  ticker: "ETH",
-  tickerName: "Ethereum",
-  chainId: "0x1",
-  rpcTarget: "https://rpc.ankr.com/eth", // needed for non-other chains
-};
-
-const provider = new EthereumPrivateKeyProvider({ config: { chainConfig } })
-
-web3auth.init({ provider });
+await web3auth.init();
 ```
 
 ### Login your User
 
-Once you're done initialising, logging in is as easy as:
+`connect()` returns a `WalletResult` containing a `provider`, a typed `signer`, and the `chainNamespace`:
 
 ```js
-await web3auth.connect({
+const result = await web3auth.connect({
+  authConnectionId: "your-auth-connection-id",
+  idToken: "JWT Token",
+  userId: "user@example.com",
+});
+
+// result.provider  — the underlying key provider
+// result.signer    — a chain-specific signer (WalletClient for EIP155, TransactionSigner for Solana, null for OTHER)
+// result.chainNamespace — "eip155" | "solana" | "other"
+```
+
+### WalletResult
+
+`connect()` returns a discriminated union based on `chainNamespace`:
+
+| `chainNamespace` | `signer` type | Description |
+|---|---|---|
+| `eip155` | `WalletClient` (viem) | EVM-compatible chains |
+| `solana` | `TransactionSigner` (@solana/signers) | Solana chains |
+| `other` | `null` | Other chain namespaces |
+
+```ts
+if (result.chainNamespace === CHAIN_NAMESPACES.EIP155) {
+  // result.signer is a viem WalletClient
+  const address = result.signer.account?.address;
+} else if (result.chainNamespace === CHAIN_NAMESPACES.SOLANA) {
+  // result.signer is a @solana/signers TransactionSigner
+  const address = result.signer.address;
+}
+```
+
+## Migration from v4.x
+
+### Breaking changes in v5.0.0
+
+- **`init()` no longer takes parameters.** Chain configuration is now passed via the `chains` option in the constructor. Remove the `provider` parameter from `init()`.
+- **`chains` is required.** Pass at least one `CustomChainConfig` in the constructor.
+- **`connect()` returns `WalletResult` instead of a raw provider.** Access the provider via `result.provider` and a chain-typed signer via `result.signer`.
+- **`verifier` / `verifierId` renamed.** Use `authConnectionId` and `userId` instead.
+- **Node.js 22+ required.**
+
+### Before (v4.x)
+
+```js
+const provider = new EthereumPrivateKeyProvider({ config: { chainConfig } });
+web3auth.init({ provider });
+
+const provider = await web3auth.connect({
   verifier: "verifier-name",
-  verifierId: "verifier-Id",
+  verifierId: "user@example.com",
   idToken: "JWT Token",
 });
 ```
 
+### After (v5.0.0)
+
+```js
+const web3auth = new Web3Auth({
+  clientId: "...",
+  web3AuthNetwork: "sapphire_mainnet",
+  chains: [{ chainNamespace: CHAIN_NAMESPACES.EIP155, chainId: "0x1", rpcTarget: "...", /* ... */ }],
+});
+await web3auth.init();
+
+const result = await web3auth.connect({
+  authConnectionId: "your-auth-connection-id",
+  userId: "user@example.com",
+  idToken: "JWT Token",
+});
+// result.provider — same provider as before
+// result.signer  — typed signer for the chain
+```
+
 ## ⏪ Requirements
 
-- Node 14+
+- Node 22+
 
 ## 🩹 Examples
 
@@ -100,10 +151,6 @@ Checkout the examples for your preferred blockchain and platform in our [example
 ## 🌐 Demo
 
 Checkout the [Web3Auth Demo](https://demo-app.web3auth.io/) to see how Web3Auth can be used in your application.
-
-Further checkout the [demo folder](https://github.com/Web3Auth/Web3Auth-backend/tree/master/demo) within `web3auth-backend` repository, which contains a Node.js example.
-
-Also, checkout the [demo folder](https://github.com/Web3Auth/Web3Auth/tree/master/demo) within `web3auth-web` repository, which contains other hosted demos for different usecases.
 
 ## 💬 Troubleshooting and Discussions
 

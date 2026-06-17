@@ -6,16 +6,16 @@
   ],
   "description": "Monorepo for web3 auth backend packages",
   "scripts": {
-    "bootstrap": "lerna bootstrap",
-    "publish:lerna": "yarn clean && yarn bootstrap && lerna publish",
+    "publish:lerna": "npm run clean && npm install && lerna publish",
     "just:publish:lerna": "lerna publish",
-    "clean": "lerna clean --yes && lerna exec -- rimraf package-lock.json .rollup.cache/ tsconfig.build.tsbuildinfo yarn.lock dist/ .rts2_cache_{cjs,esm}/ web3auth-*.tgz .eslintcache",
+    "clean": "lerna clean --yes && lerna exec -- rimraf .rollup.cache/ tsconfig.build.tsbuildinfo dist/ .rts2_cache_{cjs,esm}/ web3auth-*.tgz .eslintcache",
     "build": "cross-env FORCE_COLOR=1 lerna run --stream build",
     "dev": "lerna run dev --parallel",
     "test": "cross-env FORCE_COLOR=1 lerna run test --parallel",
     "test-debugger": "cross-env FORCE_COLOR=1 lerna run test-debugger --parallel",
     "lint": "cross-env FORCE_COLOR=1 lerna run lint --parallel",
-    "pack:lerna": "lerna exec 'yarn pack'",
+    "type-check": "cross-env FORCE_COLOR=1 lerna run type-check --parallel",
+    "pack:lerna": "lerna exec 'npm pack'",
     "pre-commit": "lerna run pre-commit",
     "prepare": "husky"
   },
@@ -24,32 +24,23 @@
     "url": "git+https://github.com/Web3Auth/web3auth-backend.git"
   },
   "devDependencies": {
-    "@babel/plugin-syntax-bigint": "^7.8.3",
-    "@babel/plugin-transform-runtime": "^7.28.3",
-    "@babel/preset-env": "^7.28.3",
-    "@babel/preset-typescript": "^7.27.1",
-    "@babel/register": "^7.28.3",
-    "@toruslabs/config": "^3.1.0",
-    "@toruslabs/eslint-config-node": "^4.1.4",
-    "@types/chai": "^4.3.19",
+    "@toruslabs/config": "^4.0.1",
+    "@toruslabs/eslint-config-node": "^5.0.2",
+    "@toruslabs/torus-scripts": "^8.1.0",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^22",
-    "chai": "^5.2.1",
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.4.5",
+    "@types/node": "^25",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9.33.0",
     "husky": "^9.1.7",
-    "jsonwebtoken": "^9.0.2",
-    "lerna": "^8.2.3",
-    "lint-staged": "^15.2.10",
-    "mocha": "^10.7.3",
-    "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "tsconfig-paths": "^4.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "lerna": "^9.0.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3",
+    "rimraf": "^6.1.3",
     "tslib": "^2.8.1",
-    "tsx": "^4.20.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.8"
   },
   "keywords": [],
   "author": "",
@@ -62,7 +53,10 @@
     "*": "lerna run --concurrency 1 --stream --since HEAD --exclude-dependents pre-commit -- "
   },
   "engines": {
-    "node": ">=20.x",
-    "npm": ">=9.x"
+    "node": ">=22.x",
+    "npm": ">=10.x"
+  },
+  "overrides": {
+    "@sentry/core": "^10.38.0"
   }
 }

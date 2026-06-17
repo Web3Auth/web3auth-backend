@@ -1,92 +1,228 @@
-import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
-import { expect } from "chai";
+import type { TransactionSigner } from "@solana/signers";
+import { CHAIN_NAMESPACES, type CustomChainConfig } from "@web3auth/no-modal";
+import type { WalletClient } from "viem";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { Web3Auth } from "../src";
 import { generateIdToken } from "./helpers";
 
 const TORUS_TEST_EMAIL = "hello@tor.us";
 const TORUS_TEST_VERIFIER = "torus-test-health";
-const TORUS_TEST_AGGREGATE_VERIFIER = "torus-aggregate-sapphire-mainnet";
+const TORUS_TEST_AGGREGATE_VERIFIER = "torus-test-health-aggregate";
+
+const EIP155_CHAIN: CustomChainConfig = {
+  chainNamespace: CHAIN_NAMESPACES.EIP155,
+  displayName: "ETH Sepolia",
+  blockExplorerUrl: "https://sepolia.etherscan.io",
+  ticker: "ETH",
+  tickerName: "Ethereum",
+  logo: "",
+  chainId: "0xaa36a7",
+  rpcTarget: "https://rpc.ankr.com/eth_sepolia",
+};
+
+const CLIENT_ID = "BJRZ6qdDTbj6Vd5YXvV994TYCqY42-PxldCetmvGTUdoq6pkCqdpuC1DIehz76zuYdaq1RJkXGHuDraHRhCQHvA";
 
 describe("web3auth backend", function () {
   let web3auth: Web3Auth;
 
-  beforeEach("one time execution before all tests", async function () {
+  beforeEach(async function () {
     web3auth = new Web3Auth({
-      clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
-      web3AuthNetwork: "sapphire_mainnet",
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [EIP155_CHAIN],
     });
-    const provider = new EthereumPrivateKeyProvider({
-      config: {
-        chainConfig: {
-          chainNamespace: CHAIN_NAMESPACES.EIP155,
-          displayName: "ETH Sepolia",
-          blockExplorerUrl: "https://sepolia.etherscan.io",
-          ticker: "ETH",
-          tickerName: "Ethereum",
-          chainId: "0xaa36a7", // sepolia
-          rpcTarget: "https://rpc.ankr.com/eth_sepolia",
-        },
-      },
-    });
-    web3auth.init({ provider });
+    await web3auth.init();
   });
 
-  it("should return a provider with private key", async function () {
-    const provider = await web3auth.connect({
-      verifier: TORUS_TEST_VERIFIER,
-      verifierId: TORUS_TEST_EMAIL,
+  it("should return a wallet with EIP155 signer", async function () {
+    const result = await web3auth.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
       idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+      userId: TORUS_TEST_EMAIL,
     });
-    expect(provider).to.not.equal(null);
+    expect(result).not.toBeNull();
+    expect(result.provider).not.toBeNull();
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.EIP155);
 
-    const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("dfb39b84e0c64b8c44605151bf8670ae6eda232056265434729b6a8a50fa3419");
+    const signer = result.signer as WalletClient;
+    expect(signer).not.toBeNull();
+    expect(signer.account?.address).toBe("0x90A926b698047b4A87265ba1E9D8b512E8489067");
   });
 
-  it("should be return a provider with private key for aggregate login", async function () {
-    const idToken = generateIdToken(TORUS_TEST_EMAIL, "ES256");
-
-    const provider = await web3auth.connect({
-      verifier: TORUS_TEST_AGGREGATE_VERIFIER,
-      verifierId: TORUS_TEST_EMAIL,
+  it("should return a wallet with signer for aggregate login", async function () {
+    const result = await web3auth.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
+      groupedAuthConnectionId: TORUS_TEST_AGGREGATE_VERIFIER,
       idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
-      subVerifierInfoArray: [{ verifier: TORUS_TEST_VERIFIER, idToken }],
+      userId: TORUS_TEST_EMAIL,
     });
-    expect(provider).to.not.equal(null);
+    expect(result).not.toBeNull();
+    expect(result.provider).not.toBeNull();
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.EIP155);
 
-    const privKey = await provider?.request({ method: "eth_private_key", params: [] });
-    expect(privKey).to.equal("9a8c7d58d4246507cdd6b2c34850eac52a35c4d6ebea8cefbec26010ad8011d6");
+    const signer = result.signer as WalletClient;
+    expect(signer).not.toBeNull();
+    expect(signer.account?.address).toBe("0x86129bC541b03B6B42A76E9e002eE88F81E0aadD");
   });
 
   it("should be able to login with solana", async function () {
-    const web3authSolana = new Web3Auth({
-      clientId: "BCtbnOamqh0cJFEUYA0NB5YkvBECZ3HLZsKfvSRBvew2EiiKW3UxpyQASSR0artjQkiUOCHeZ_ZeygXpYpxZjOs",
-      web3AuthNetwork: "testnet",
-    });
-    const chainConfig: CustomChainConfig = {
+    const solanaChainConfig: CustomChainConfig = {
       chainNamespace: CHAIN_NAMESPACES.SOLANA,
       displayName: "Solana Devnet",
       blockExplorerUrl: "https://explorer.solana.com/",
       ticker: "sol",
       tickerName: "Solana",
+      logo: "",
       chainId: "0x3",
       rpcTarget: "https://api.devnet.solana.com",
     };
-    const provider = new SolanaPrivateKeyProvider({ config: { chainConfig } });
-    web3authSolana.init({ provider });
-    const w3aProvider = await web3authSolana.connect({
-      verifier: TORUS_TEST_VERIFIER,
-      verifierId: TORUS_TEST_EMAIL,
-      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+    const web3authSolana = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [solanaChainConfig],
     });
-    expect(w3aProvider).to.not.equal(null);
+    await web3authSolana.init();
 
-    const privKey = await w3aProvider?.request({ method: "solanaPrivateKey", params: [] });
-    expect(privKey).to.equal(
-      "296045a5599afefda7afbdd1bf236358baff580a0fe2db62ae5c1bbe817fbae49fe0788629bf18798cefdb361b63f2b69f384bdf93fb85f89a24ef427d6f8d10"
-    );
+    const result = await web3authSolana.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
+      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+      userId: TORUS_TEST_EMAIL,
+    });
+    expect(result).not.toBeNull();
+    expect(result.provider).not.toBeNull();
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.SOLANA);
+    const solanaSigner = result.signer as TransactionSigner;
+    expect(solanaSigner).not.toBeNull();
+    expect(solanaSigner.address).toBe("9vUdvTHkzc7hAQh7m9m4TgSsVtBBMZJ3skSiUL9fZHsU");
+  });
+});
+
+describe("web3auth backend - error cases", function () {
+  it("should throw if connect is called before init", async function () {
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [EIP155_CHAIN],
+    });
+
+    await expect(
+      web3auth.connect({
+        authConnectionId: TORUS_TEST_VERIFIER,
+        idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+        userId: TORUS_TEST_EMAIL,
+      })
+    ).rejects.toThrow("Please call init first");
+  });
+
+  it("should throw if idToken is missing", async function () {
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [EIP155_CHAIN],
+    });
+    await web3auth.init();
+
+    await expect(
+      web3auth.connect({
+        authConnectionId: TORUS_TEST_VERIFIER,
+        idToken: "",
+        userId: TORUS_TEST_EMAIL,
+      })
+    ).rejects.toThrow("idToken and authConnectionId are required");
+  });
+
+  it("should throw if authConnectionId is missing", async function () {
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [EIP155_CHAIN],
+    });
+    await web3auth.init();
+
+    await expect(
+      web3auth.connect({
+        authConnectionId: "",
+        idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+        userId: TORUS_TEST_EMAIL,
+      })
+    ).rejects.toThrow("idToken and authConnectionId are required");
+  });
+
+  it("should return OTHER namespace with null signer", async function () {
+    const otherChainConfig: CustomChainConfig = {
+      chainNamespace: CHAIN_NAMESPACES.OTHER,
+      displayName: "Other Chain",
+      blockExplorerUrl: "",
+      ticker: "OTHER",
+      tickerName: "Other",
+      logo: "",
+      chainId: "other-chain",
+      rpcTarget: "https://example.com/rpc",
+    };
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [otherChainConfig],
+    });
+    await web3auth.init();
+
+    const result = await web3auth.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
+      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+      userId: TORUS_TEST_EMAIL,
+    });
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.OTHER);
+    expect(result.signer).toBeNull();
+    expect(result.provider).not.toBeNull();
+  });
+});
+
+describe("web3auth backend - usePnPKey with URL-safe clientId", function () {
+  it("should return a different address with usePnPKey enabled", async function () {
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      usePnPKey: true,
+      chains: [EIP155_CHAIN],
+    });
+    await web3auth.init();
+
+    const result = await web3auth.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
+      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+      userId: TORUS_TEST_EMAIL,
+    });
+    expect(result).not.toBeNull();
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.EIP155);
+
+    const signer = result.signer as WalletClient;
+    expect(signer.account?.address).toBeDefined();
+    // PnP key derives a different address than the default SFA key
+    expect(signer.account?.address).not.toBe("0x90A926b698047b4A87265ba1E9D8b512E8489067");
+  });
+});
+
+describe("web3auth backend - EIP155 signer chain metadata", function () {
+  it("should have chain config on the EIP155 signer", async function () {
+    const web3auth = new Web3Auth({
+      clientId: CLIENT_ID,
+      web3AuthNetwork: "mainnet",
+      chains: [EIP155_CHAIN],
+    });
+    await web3auth.init();
+
+    const result = await web3auth.connect({
+      authConnectionId: TORUS_TEST_VERIFIER,
+      idToken: generateIdToken(TORUS_TEST_EMAIL, "ES256"),
+      userId: TORUS_TEST_EMAIL,
+    });
+    expect(result.chainNamespace).toBe(CHAIN_NAMESPACES.EIP155);
+
+    const signer = result.signer as WalletClient;
+    expect(signer.chain).toBeDefined();
+    expect(signer.chain!.id).toBe(Number(EIP155_CHAIN.chainId));
+    expect(signer.chain!.name).toBe(EIP155_CHAIN.displayName);
+    expect(signer.chain!.nativeCurrency.symbol).toBe(EIP155_CHAIN.ticker);
   });
 });

@@ -1,13 +1,14 @@
 import type { TransactionSigner } from "@solana/signers";
+import type { BUILD_ENV_TYPE } from "@web3auth/auth";
 import type { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
-import type { Wallet } from "ethers";
+import type { WalletClient } from "viem";
 
 export type PrivateKeyProvider = IBaseProvider<string>;
 
 // Discriminated union for wallet results
 export type WalletResult =
   | { chainNamespace: typeof CHAIN_NAMESPACES.SOLANA; provider: PrivateKeyProvider; signer: TransactionSigner }
-  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: Wallet }
+  | { chainNamespace: typeof CHAIN_NAMESPACES.EIP155; provider: PrivateKeyProvider; signer: WalletClient }
   | { chainNamespace: typeof CHAIN_NAMESPACES.OTHER; provider: PrivateKeyProvider; signer: null };
 
 export type LoginParams = {
@@ -37,15 +38,21 @@ export interface Web3AuthOptions {
 
   /**
    * Web3Auth Network to use for login
-   * @defaultValue mainnet
+   * @defaultValue sapphire_mainnet
    */
   web3AuthNetwork?: WEB3AUTH_NETWORK_TYPE;
+
+  /**
+   * Build environment for fetching project configuration
+   * @defaultValue production
+   */
+  authBuildEnv?: BUILD_ENV_TYPE;
 
   /**
    * multiple chain configurations,
    * only provided chains will be used
    */
-  chains?: CustomChainConfig[];
+  chains: CustomChainConfig[];
 
   /**
    * default chain Id to use
