@@ -8,21 +8,22 @@
     "build": "torus-scripts build",
     "prepack": "npm run build",
     "test": "cross-env NODE_ENV=test vitest run --config test/vitest.config.mts",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "pre-commit": "lint-staged --cwd .",
     "lint": "torus-scripts lint src test"
   },
   "dependencies": {
-    "@segment/analytics-node": "^3.0.0",
-    "@solana/keys": "^6.2.0",
-    "@solana/signers": "^6.2.0",
-    "@toruslabs/constants": "^16.0.0",
-    "@toruslabs/fetch-node-details": "^16.0.0",
+    "@segment/analytics-node": "^3.1.0",
+    "@solana/keys": "^6.10.0",
+    "@solana/signers": "^6.10.0",
+    "@toruslabs/constants": "^16.1.1",
+    "@toruslabs/fetch-node-details": "^16.1.1",
     "@toruslabs/http-helpers": "^9.0.0",
     "@toruslabs/metadata-helpers": "^8.2.0",
-    "@toruslabs/torus.js": "^17.1.1",
-    "@web3auth/auth": "^11.2.1",
-    "@web3auth/no-modal": "^10.15.0",
-    "viem": "^2.47.0"
+    "@toruslabs/torus.js": "^17.2.3",
+    "@web3auth/auth": "^11.8.1",
+    "@web3auth/no-modal": "^11.2.0",
+    "viem": "^2.52.2"
   },
   "keywords": [],
   "author": "",
@@ -43,9 +44,9 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "cross-env": "^10.1.0",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.9"
   }
 }

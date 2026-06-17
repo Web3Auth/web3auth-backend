@@ -1,4 +1,5 @@
 import type { TransactionSigner } from "@solana/signers";
+import type { BUILD_ENV_TYPE } from "@web3auth/auth";
 import type { CHAIN_NAMESPACES, ChainNamespaceType, CustomChainConfig, IBaseProvider, WEB3AUTH_NETWORK_TYPE } from "@web3auth/no-modal";
 import type { WalletClient } from "viem";
 
@@ -37,9 +38,15 @@ export interface Web3AuthOptions {
 
   /**
    * Web3Auth Network to use for login
-   * @defaultValue mainnet
+   * @defaultValue sapphire_mainnet
    */
   web3AuthNetwork?: WEB3AUTH_NETWORK_TYPE;
+
+  /**
+   * Build environment for fetching project configuration
+   * @defaultValue production
+   */
+  authBuildEnv?: BUILD_ENV_TYPE;
 
   /**
    * multiple chain configurations,

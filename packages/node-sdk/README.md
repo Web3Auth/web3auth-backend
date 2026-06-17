@@ -45,7 +45,7 @@ import { CHAIN_NAMESPACES } from "@web3auth/no-modal";
 
 const web3auth = new Web3Auth({
   clientId: "", // Get your Client ID from Web3Auth Dashboard
-  web3AuthNetwork: "mainnet",
+  web3AuthNetwork: "sapphire_mainnet",
   chains: [
     {
       chainNamespace: CHAIN_NAMESPACES.EIP155,
@@ -126,7 +126,7 @@ const provider = await web3auth.connect({
 ```js
 const web3auth = new Web3Auth({
   clientId: "...",
-  web3AuthNetwork: "mainnet",
+  web3AuthNetwork: "sapphire_mainnet",
   chains: [{ chainNamespace: CHAIN_NAMESPACES.EIP155, chainId: "0x1", rpcTarget: "...", /* ... */ }],
 });
 await web3auth.init();

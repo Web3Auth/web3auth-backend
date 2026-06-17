@@ -8,6 +8,7 @@ import {
   AUTH_CONNECTION,
   Auth0UserInfo,
   AuthConnectionConfigItem,
+  BUILD_ENV,
   getED25519Key,
   getUserId,
   serializeError,
@@ -40,10 +41,6 @@ import { parseToken } from "./utils";
 export class Web3Auth implements IWeb3Auth {
   private readonly _options: Web3AuthOptions;
 
-  get options(): Readonly<Web3AuthOptions> {
-    return this._options;
-  }
-
   private torusUtils: Torus | null = null;
 
   private nodeDetailManager: NodeDetailManager | null = null;
@@ -58,10 +55,15 @@ export class Web3Auth implements IWeb3Auth {
     this._options = {
       ...options,
       web3AuthNetwork: network,
+      authBuildEnv: options.authBuildEnv || BUILD_ENV.PRODUCTION,
       useDKG: options.useDKG !== undefined ? options.useDKG : this.getUseDKGDefaultValue(network),
       checkCommitment: typeof options.checkCommitment === "boolean" ? options.checkCommitment : true,
     };
     this.analytics = new SegmentAnalytics();
+  }
+
+  get options(): Readonly<Web3AuthOptions> {
+    return this._options;
   }
 
   get currentChainId(): string {
@@ -99,6 +101,7 @@ export class Web3Auth implements IWeb3Auth {
       projectConfig = await fetchProjectConfig({
         clientId,
         web3AuthNetwork: network,
+        authBuildEnv: this.options.authBuildEnv,
       });
     } catch (e) {
       const error = await serializeError(e);
@@ -359,6 +362,7 @@ export class Web3Auth implements IWeb3Auth {
         default_chain_id: defaultChain ? getCaipChainId(defaultChain) : undefined,
         default_chain_name: defaultChain?.displayName,
         logging_enabled: this.options.enableLogging,
+        auth_build_env: this.options.authBuildEnv,
         sfa_key_enabled: !this.options.usePnPKey,
         use_dkg: this.options.useDKG,
         check_commitment: this.options.checkCommitment,
